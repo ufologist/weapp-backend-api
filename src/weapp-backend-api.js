@@ -91,13 +91,13 @@ class BackendApi {
  * 统一封装微信小程序平台后端接口的调用
  * 
  * @example
- * var api = new WeappBackendApi({
+ * var backendApi = new WeappBackendApi({
  *     'getList': {
  *         method: 'GET',
  *         url: 'https://domain.com/list'
  *     }
  * });
- * api.sendRequest('getList').then(function([data]) {
+ * backendApi.sendRequest('getList').then(function([data]) {
  *     console.log(data);
  * }, function(requestResult) {
  *     console.log(requestResult);
@@ -297,7 +297,9 @@ class WeappBackendApi extends BackendApi {
      * @param {object} requestResult wx.request success 或者 fail 返回的结果
      */
     failStatusHandler(requestOptions, requestResult) {
-        // var result = this.getRequestResult(requestOptions, requestResult);
+        // 子类具体去实现
+        // 例如
+        // var result = requestResult.data;
         // if (result.status === WeappBackendApi.defaults.REQUEST_HTTP_FAIL_STATUS) {
         //     // XXX your code here
         // } else if (result.status == 401) {

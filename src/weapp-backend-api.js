@@ -256,20 +256,16 @@ class WeappBackendApi extends BackendApi {
         return result.data;
     }
     /**
-     * 当接口处理失败时通用的错误状态处理
+     * 接口出错时统一弹出错误提示信息
      * 
-     * 例如:
-     * - 接口出错时统一弹出错误提示信息
-     *   提供给用户看的消息格式参考 QQ 的错误提示消息
-     *   提示消息
-     *   (错误码:result.statusInfo.message)灰色字
-     * - 接口出错时根据 status 做通用的错误处理(例如用户 session 超时, 引到用户重新登录)
+     * 例如: 提供给用户看的消息格式参考 QQ 的错误提示消息
+     * 提示消息
+     * (错误码:result.statusInfo.message)灰色字
      * 
      * @param {object} requestOptions wx.request options
      * @param {object} requestResult wx.request success 或者 fail 返回的结果
-     * @return {Promise}
      */
-    commonFailStatusHandler(requestOptions, requestResult) {
+    commonFailTip(requestOptions, requestResult) {
         // 接口调用失败, 输出失败的日志信息, 需要包含如下重要信息
         // * HTTP method
         // * HTTP URL
@@ -277,16 +273,33 @@ class WeappBackendApi extends BackendApi {
         // * 接口的返回状态
         // * 接口的返回数据
         var result = requestResult.data;
-        console.warn('接口调用出错', requestOptions.method, requestOptions.url, requestOptions.data, result.status, requestOptions, requestResult);
+        console.warn('接口调用出错(' + requestResult.statusCode + ')', requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
 
         var message = result.statusInfo ? result.statusInfo.message : WeappBackendApi.defaults.FAIL_MESSAGE;
+        if (result.status) {
+            message = message + '\n' + '(错误码:' + result.status + ')';
+        }
+
         // XXX 由于 wx.showLoading 底层就是调用的 showToast,
         // toast 实现是单例, 全局只有一个, 因此使用 showToast 会造成 loading 被关掉
         wx.showToast({
             icon: 'none',
-            title: message + '\n' + '(错误码:' + result.status + ')'
+            title: message
         });
-
+    }
+    /**
+     * 当接口处理失败时通用的错误状态处理
+     * 
+     * 例如:
+     * - 接口出错时统一弹出错误提示信息
+     * - 接口出错时根据 status 做通用的错误处理(例如用户 session 超时, 引到用户重新登录)
+     * 
+     * @param {object} requestOptions wx.request options
+     * @param {object} requestResult wx.request success 或者 fail 返回的结果
+     * @return {Promise}
+     */
+    commonFailStatusHandler(requestOptions, requestResult) {
+        this.commonFailTip(requestOptions, requestResult);
         this.failStatusHandler(requestOptions, requestResult);
         return Promise.reject(requestResult);
     }

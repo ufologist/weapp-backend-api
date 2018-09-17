@@ -29,10 +29,14 @@ class BackendApi {
      *                url: 'https://domain.com/detail'
      *            }
      *        }
+     * @param defaultRequestOptions 默认的请求参数
+     * @param logLevel 日志级别, 默认为 FATAL 级别
+     *        http://commons.apache.org/proper/commons-logging/javadocs/api-release/org/apache/commons/logging/Log.html
      */
-    constructor(apiConfig = {}, defaultRequestOptions = {}) {
+    constructor(apiConfig = {}, defaultRequestOptions = {}, logLevel = LOG_LEVEL.FATAL) {
         this.apiConfig = apiConfig;
         this.defaultRequestOptions = defaultRequestOptions;
+        this.logLevel = logLevel;
 
         // 正在发送的请求
         this.sending = [];
@@ -84,6 +88,9 @@ class BackendApi {
      */
     $sendHttpRequest(requestOptions) {
         // 子类具体去实现
+        return new Promise(function(resolve, reject) {
+            reject('需要子类去实现发送 HTTP 请求');
+        });
     }
 }
 
@@ -91,7 +98,9 @@ class BackendApi {
  * 统一封装微信小程序平台后端接口的调用
  * 
  * @example
- * var backendApi = new WeappBackendApi({
+ * import BackendApi from 'weapp-backend-api';
+ * 
+ * var backendApi = new BackendApi({
  *     'getList': {
  *         method: 'GET',
  *         url: 'https://domain.com/list'
@@ -104,8 +113,8 @@ class BackendApi {
  * });
  */
 class WeappBackendApi extends BackendApi {
-    constructor(apiConfig = {}, defaultRequestOptions = WeappBackendApi.defaults.requestOptions) {
-        super(apiConfig, defaultRequestOptions);
+    constructor(apiConfig, defaultRequestOptions = WeappBackendApi.defaults.requestOptions, logLevel) {
+        super(apiConfig, defaultRequestOptions, logLevel);
     }
     /**
      * 请求发送前的统一处理
@@ -190,6 +199,10 @@ class WeappBackendApi extends BackendApi {
      */
     _successHandler(requestOptions, requestResult) {
         if (this.ifApiSuccess(requestOptions, requestResult)) {
+            if (this.logLevel <= LOG_LEVEL.DEBUG) {
+                console.log(requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
+                console.log('----------------------');
+            }
             return [this.getRequestResult(requestOptions, requestResult), requestResult];
         } else { // 业务错误
             return this.commonFailStatusHandler(requestOptions, requestResult);
@@ -263,29 +276,25 @@ class WeappBackendApi extends BackendApi {
      * (错误码:result.statusInfo.message)灰色字
      * 
      * @param {object} requestOptions wx.request options
+     *                 requestOptions._silent {boolean} 是否开启静默模式, 静默模式下接口调用出错不给用户提示错误消息
      * @param {object} requestResult wx.request success 或者 fail 返回的结果
      */
     commonFailTip(requestOptions, requestResult) {
-        // 接口调用失败, 输出失败的日志信息, 需要包含如下重要信息
-        // * HTTP method
-        // * HTTP URL
-        // * 接口的参数
-        // * 接口的返回状态
-        // * 接口的返回数据
         var result = requestResult.data;
-        console.warn('接口调用出错(' + requestResult.statusCode + ')', requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
-
         var message = result.statusInfo ? result.statusInfo.message : WeappBackendApi.defaults.FAIL_MESSAGE;
         if (result.status) {
             message = message + '\n' + '(错误码:' + result.status + ')';
         }
 
-        // XXX 由于 wx.showLoading 底层就是调用的 showToast,
-        // toast 实现是单例, 全局只有一个, 因此使用 showToast 会造成 loading 被关掉
-        wx.showToast({
-            icon: 'none',
-            title: message
-        });
+        // 在一些场景下需要, 例如提示用户登录的时候, 不希望看见一个错误提示, 或者想自定义错误提示的时候
+        if (requestOptions._silent !== true) {
+            // XXX 由于 wx.showLoading 底层就是调用的 showToast,
+            // toast 实现是单例, 全局只有一个, 因此使用 showToast 会造成 loading 被关掉
+            wx.showToast({
+                icon: 'none',
+                title: message
+            });
+        }
     }
     /**
      * 当接口处理失败时通用的错误状态处理
@@ -299,6 +308,15 @@ class WeappBackendApi extends BackendApi {
      * @return {Promise}
      */
     commonFailStatusHandler(requestOptions, requestResult) {
+        // 接口调用失败, 输出失败的日志信息, 需要包含如下重要信息
+        // * HTTP method
+        // * HTTP URL
+        // * 接口的参数
+        // * 接口的返回状态
+        // * 接口的返回数据
+        console.warn('接口调用出错(' + requestResult.statusCode + ')', requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
+        console.warn('----------------------');
+
         this.commonFailTip(requestOptions, requestResult);
         this.failStatusHandler(requestOptions, requestResult);
         return Promise.reject(requestResult);
@@ -344,3 +362,14 @@ WeappBackendApi.defaults = {
 };
 
 export default WeappBackendApi;
+/**
+ * 日志级别
+ */
+export const LOG_LEVEL = {
+    TRACE: 0,
+    DEBUG: 1,
+    INFO: 2,
+    WARN: 3,
+    ERROR: 4,
+    FATAL: 5
+};

@@ -13,9 +13,19 @@
 
 - 集中配置接口
 - 统一发送请求
+  - `sendRequest(name, options)`
 - 统一处理请求的返回
 - 统一异常处理
-- 预留扩展点
+- Promise 风格
+- 支持日志级别参数, 用于在调试阶段输出每个请求的信息
+- 预留扩展点(继承覆盖的方式)
+  - `beforeSend(requestOptions)`
+  - `afterSend(requestOptions)`
+  - `ifApiSuccess(requestOptions, requestResult)`
+  - `getRequestResult(requestOptions, requestResult)`
+  - `commonFailStatusHandler(requestOptions, requestResult)`
+  - `commonFailTip(requestOptions, requestResult)`
+  - `failStatusHandler(requestOptions, requestResult)`
 
 ## 安装
 
@@ -27,15 +37,38 @@ npm install weapp-backend-api --save
 
 ```javascript
 import BackendApi from 'weapp-backend-api';
+import {
+    LOG_LEVEL
+} from 'weapp-backend-api';
 
-var backendApi = new WeappBackendApi({
+var backendApi = new BackendApi({
     'getList': {
         method: 'GET',
         url: 'https://domain.com/list'
+    },
+    'getUser': { // RESTful
+        method: 'GET',
+        url: 'https://domain.com/user'
     }
-});
+}, null, LOG_LEVEL.DEBUG);
 
 backendApi.sendRequest('getList').then(function([data]) {
+    console.log(data);
+}, function(requestResult) {
+    console.log(requestResult);
+});
+
+// 支持 RESTful 风格
+backendApi.sendRequest('getUser/1').then(function([data]) {
+    console.log(data);
+}, function(requestResult) {
+    console.log(requestResult);
+});
+
+// 支持静默模式, 静默模式下接口调用出错不给用户提示错误消息
+backendApi.sendRequest('getList', {
+    _silent: true
+}).then(function([data]) {
     console.log(data);
 }, function(requestResult) {
     console.log(requestResult);

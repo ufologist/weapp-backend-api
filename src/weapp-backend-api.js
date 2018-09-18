@@ -147,8 +147,7 @@ class WeappBackendApi extends BackendApi {
     }
     /**
      * @override
-     * @param {object} requestOptions 
-     * @return {Promise} 如果返回 Promise 则不会去发送请求
+     * @return {undefined|Promise} 如果返回 Promise 则不会去发送请求
      */
     beforeSend(requestOptions) {
         if (this._isSending(requestOptions) && requestOptions._interceptDuplicateRequest) {
@@ -159,6 +158,9 @@ class WeappBackendApi extends BackendApi {
     }
     /**
      * 拦截重复请求
+     * 
+     * @param {object} requestOptions
+     * @return {Promise}
      */
     _interceptDuplicateRequest(requestOptions) {
         var requestInfoHash = this._getRequestInfoHash(requestOptions);
@@ -204,7 +206,6 @@ class WeappBackendApi extends BackendApi {
      *                 requestOptions._interceptDuplicateRequest {boolean} 是否拦截重复请求
      *                 requestOptions._showFailTip {boolean} 接口调用出错时是否给用户提示错误消息
      *                 requestOptions._showFailTipDuration {number} 接口调用出错时错误信息的显示多长时间(ms)
-     * @return {Promise}
      */
     $sendHttpRequest(requestOptions) {
         return new Promise((resolve, reject) => {

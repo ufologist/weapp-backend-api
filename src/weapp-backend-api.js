@@ -80,7 +80,7 @@ class BackendApi {
      * @param {object} options 请求参数
      * @return {object}
      */
-    _getRequestOptions(name, options) {
+    _getRequestOptions(name, options = {}) {
         var api;
 
         if (name) {

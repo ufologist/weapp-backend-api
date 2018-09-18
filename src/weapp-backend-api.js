@@ -149,6 +149,7 @@ class WeappBackendApi extends BackendApi {
      * @override
      * @param {object} requestOptions 
      *                 requestOptions._showLoading {boolean} 是否显示 loading 提示
+     *                 requestOptions._showLoadingMask {boolean} 是否显示 loading 提示的 mask
      */
     beforeSend(requestOptions) {
         if (!this._isAnySending()) {
@@ -170,6 +171,7 @@ class WeappBackendApi extends BackendApi {
             wx.showLoading({
                 icon: 'loading',
                 title: WeappBackendApi.defaults.LOADING_MESSAGE,
+                mask: requestOptions._showLoadingMask
             });
         }
         // 即使设置为不显示 loading 提示, 但顶部的 loading 提示还是要给出的,

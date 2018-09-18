@@ -170,7 +170,6 @@ class WeappBackendApi extends BackendApi {
             wx.showLoading({
                 icon: 'loading',
                 title: WeappBackendApi.defaults.LOADING_MESSAGE,
-                mask: true
             });
         }
         // 即使设置为不显示 loading 提示, 但顶部的 loading 提示还是要给出的,
@@ -263,7 +262,7 @@ class WeappBackendApi extends BackendApi {
         var requestInfoHash = this._getRequestInfoHash(requestOptions);
         var result = delete this.sending[requestInfoHash];
         if (!result) {
-            console.warn('将请求从发送中的队列中移除失败', requestInfoHash);
+            console.warn('将请求从发送中的队列中移除失败', requestInfoHash, requestOptions);
         }
     }
     /**

@@ -150,11 +150,26 @@ class WeappBackendApi extends BackendApi {
      * @param {object} requestOptions 
      *                 requestOptions._showLoading {boolean} 是否显示 loading 提示
      *                 requestOptions._showLoadingMask {boolean} 是否显示 loading 提示的 mask
+     *                 requestOptions._interceptDuplicateRequest {boolean} 是否拦截重复请求
+     * @return {Promise} 如果返回 Promise 则不会去发送请求
      */
     beforeSend(requestOptions) {
-        if (!this._isAnySending()) {
+        if (this._isSending(requestOptions) && requestOptions._interceptDuplicateRequest) {
+            return this._interceptDuplicateRequest(requestOptions);
+        } else {
             this._showLoading(requestOptions);
         }
+    }
+    /**
+     * 拦截重复请求
+     */
+    _interceptDuplicateRequest(requestOptions) {
+        var requestInfoHash = this._getRequestInfoHash(requestOptions);
+
+        console.warn('拦截到重复请求', requestInfoHash, this.sending[requestInfoHash], this.sending);
+        console.log('----------------------');
+
+        return new Promise(function() {});
     }
     /**
      * @override
@@ -215,10 +230,13 @@ class WeappBackendApi extends BackendApi {
                 this.afterSend(requestOptions, requestResult);
             };
 
-            this.beforeSend(requestOptions);
-            wx.request(requestOptions);
-
-            this._addToSending(requestOptions);
+            var beforeSendResult = this.beforeSend(requestOptions);
+            if (beforeSendResult) {
+                return beforeSendResult;
+            } else {
+                wx.request(requestOptions);
+                this._addToSending(requestOptions);
+            }
         }).then((requestResult) => {
             return this._successHandler(requestOptions, requestResult);
         }, (requestResult) => {

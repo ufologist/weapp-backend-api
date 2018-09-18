@@ -146,10 +146,11 @@ class WeappBackendApi extends BackendApi {
     /**
      * @override
      * @param {object} requestOptions 
+     *                 requestOptions._showLoading {boolean} 是否显示 loading 提示
      */
     beforeSend(requestOptions) {
         if (this.sending.length === 0) {
-            this._showLoading();
+            this._showLoading(requestOptions);
         }
     }
     /**
@@ -158,18 +159,22 @@ class WeappBackendApi extends BackendApi {
      */
     afterSend(requestOptions) {
         if (this.sending.length === 0) {
-            this._hideLoading();
+            this._hideLoading(requestOptions);
         }
     }
-    _showLoading() {
-        wx.showLoading({
-            icon: 'loading',
-            title: WeappBackendApi.defaults.LOADING_MESSAGE,
-            mask: true
-        });
+    _showLoading(requestOptions) {
+        if (requestOptions._showLoading !== false) {
+            wx.showLoading({
+                icon: 'loading',
+                title: WeappBackendApi.defaults.LOADING_MESSAGE,
+                mask: true
+            });
+        }
+        // 即使设置为不显示 loading 提示, 但顶部的 loading 提示还是要给出的,
+        // 因为发送了请求出去, 总要给予一定的反馈信息(例如移动网络有数据交互时的提示)
         wx.showNavigationBarLoading();
     }
-    _hideLoading() {
+    _hideLoading(requestOptions) {
         wx.hideLoading();
         wx.hideNavigationBarLoading();
     }
@@ -303,7 +308,7 @@ class WeappBackendApi extends BackendApi {
      * (错误码:result.statusInfo.message)灰色字
      * 
      * @param {object} requestOptions wx.request options
-     *                 requestOptions._silent {boolean} 是否开启静默模式, 静默模式下接口调用出错不给用户提示错误消息
+     *                 requestOptions._showFailTip {boolean} 接口调用出错时是否给用户提示错误消息
      * @param {object} requestResult wx.request success 或者 fail 返回的结果
      */
     commonFailTip(requestOptions, requestResult) {
@@ -314,7 +319,7 @@ class WeappBackendApi extends BackendApi {
         }
 
         // 在一些场景下需要, 例如提示用户登录的时候, 不希望看见一个错误提示, 或者想自定义错误提示的时候
-        if (requestOptions._silent !== true) {
+        if (requestOptions._showFailTip !== false) {
             // XXX 由于 wx.showLoading 底层就是调用的 showToast,
             // toast 实现是单例, 全局只有一个, 因此使用 showToast 会造成 loading 被关掉
             wx.showToast({

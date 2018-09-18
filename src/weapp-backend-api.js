@@ -1,4 +1,5 @@
 import extend from 'extend';
+import md5 from 'blueimp-md5';
 
 /**
  * 统一封装后端接口的调用
@@ -41,7 +42,7 @@ class BackendApi {
         this.logLevel = logLevel;
 
         // 正在发送的请求
-        this.sending = [];
+        this.sending = {};
     }
     /**
      * 发送请求前的统一处理
@@ -55,9 +56,10 @@ class BackendApi {
      * 请求结束后的统一处理
      * 
      * @abstract
-     * @param {object} requestOptions 
+     * @param {object} requestOptions
+     * @param {object} requestResult
      */
-    afterSend(requestOptions) {}
+    afterSend(requestOptions, requestResult) {}
     /**
      * 统一发送(接口)请求的方法
      * 
@@ -99,8 +101,8 @@ class BackendApi {
             if (_api) {
                 api = extend(true, {}, _api);
                 api.url = api.url + urlAppend;
-            } else {
-                console.warn('没有找到对应的接口配置', _name, this.apiConfig);
+            } else if (!options.url) {
+                console.warn('没有找到对应的接口配置, 也没有配置 URL', _name, options, this.apiConfig);
             }
         }
 
@@ -149,16 +151,17 @@ class WeappBackendApi extends BackendApi {
      *                 requestOptions._showLoading {boolean} 是否显示 loading 提示
      */
     beforeSend(requestOptions) {
-        if (this.sending.length === 0) {
+        if (!this._isAnySending()) {
             this._showLoading(requestOptions);
         }
     }
     /**
      * @override
-     * @param {object} requestOptions 
      */
-    afterSend(requestOptions) {
-        if (this.sending.length === 0) {
+    afterSend(requestOptions, requestResult) {
+        this._removeFromSending(requestOptions);
+
+        if (!this._isAnySending()) {
             this._hideLoading(requestOptions);
         }
     }
@@ -207,20 +210,78 @@ class WeappBackendApi extends BackendApi {
             requestOptions.fail = function(requestResult) {
                 reject(requestResult);
             };
-            requestOptions.complete = (requestOptions) => {
-                this.sending.splice(this.sending.indexOf(requestOptions), 1);
-                this.afterSend(requestOptions);
+            requestOptions.complete = (requestResult) => {
+                this.afterSend(requestOptions, requestResult);
             };
 
             this.beforeSend(requestOptions);
             wx.request(requestOptions);
 
-            this.sending.push(requestOptions);
+            this._addToSending(requestOptions);
         }).then((requestResult) => {
             return this._successHandler(requestOptions, requestResult);
         }, (requestResult) => {
             return this._failHandler(requestOptions, requestResult);
         });
+    }
+    /**
+     * 获取一个请求的关键信息
+     * 
+     * - method
+     * - url
+     * - data
+     * 
+     * @param {object} requestOptions 
+     * @return {string} 请求关键信息组合的 MD5 值
+     */
+    _getRequestInfoHash(requestOptions) {
+        var requestInfo = requestOptions.method + ' ' + requestOptions.url + ' ' + requestOptions.data;
+
+        var requestInfoHash = requestInfo;
+        try {
+            requestInfoHash = md5(requestInfo);
+        } catch (error) {
+            console.error('获取一个请求的关键信息的 MD5 失败', requestInfo);
+        }
+
+        return requestInfoHash;
+    }
+    /**
+     * 将请求放入到发送中的队列中
+     * 
+     * @param {object} requestOptions 
+     */
+    _addToSending(requestOptions) {
+        this.sending[this._getRequestInfoHash(requestOptions)] = requestOptions;
+    }
+    /**
+     * 将请求从发送中的队列中移除出来
+     * 
+     * @param {object} requestOptions 
+     */
+    _removeFromSending(requestOptions) {
+        var requestInfoHash = this._getRequestInfoHash(requestOptions);
+        var result = delete this.sending[requestInfoHash];
+        if (!result) {
+            console.warn('将请求从发送中的队列中移除失败', requestInfoHash);
+        }
+    }
+    /**
+     * 某个请求是否正在发送中
+     * 
+     * @param {object} requestOptions
+     * @return {boolean}
+     */
+    _isSending(requestOptions) {
+        return this.sending.hasOwnProperty(this._getRequestInfoHash(requestOptions));
+    }
+    /**
+     * 是不是有正在发送中的请求
+     * 
+     * @return {boolean}
+     */
+    _isAnySending() {
+        return Object.keys(this.sending).length !== 0;
     }
     /**
      * 接口调用成功时的默认处理方法

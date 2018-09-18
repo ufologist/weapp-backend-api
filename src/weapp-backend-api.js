@@ -148,9 +148,6 @@ class WeappBackendApi extends BackendApi {
     /**
      * @override
      * @param {object} requestOptions 
-     *                 requestOptions._showLoading {boolean} 是否显示 loading 提示
-     *                 requestOptions._showLoadingMask {boolean} 是否显示 loading 提示的 mask
-     *                 requestOptions._interceptDuplicateRequest {boolean} 是否拦截重复请求
      * @return {Promise} 如果返回 Promise 则不会去发送请求
      */
     beforeSend(requestOptions) {
@@ -202,6 +199,11 @@ class WeappBackendApi extends BackendApi {
      * 
      * @override
      * @param {object} requestOptions wx.requesst options
+     *                 requestOptions._showLoading {boolean} 是否显示 loading 提示
+     *                 requestOptions._showLoadingMask {boolean} 是否显示 loading 提示的 mask
+     *                 requestOptions._interceptDuplicateRequest {boolean} 是否拦截重复请求
+     *                 requestOptions._showFailTip {boolean} 接口调用出错时是否给用户提示错误消息
+     *                 requestOptions._showFailTipDuration {number} 接口调用出错时错误信息的显示多长时间(ms)
      * @return {Promise}
      */
     $sendHttpRequest(requestOptions) {
@@ -388,7 +390,6 @@ class WeappBackendApi extends BackendApi {
      * (错误码:result.statusInfo.message)灰色字
      * 
      * @param {object} requestOptions wx.request options
-     *                 requestOptions._showFailTip {boolean} 接口调用出错时是否给用户提示错误消息
      * @param {object} requestResult wx.request success 或者 fail 返回的结果
      */
     commonFailTip(requestOptions, requestResult) {
@@ -402,10 +403,14 @@ class WeappBackendApi extends BackendApi {
         if (requestOptions._showFailTip !== false) {
             // XXX 由于 wx.showLoading 底层就是调用的 showToast,
             // toast 实现是单例, 全局只有一个, 因此使用 showToast 会造成 loading 被关掉
-            wx.showToast({
+            var toastOptions = {
                 icon: 'none',
                 title: message
-            });
+            };
+            if (typeof requestOptions._showFailTipDuration != 'undefined') {
+                toastOptions.duration = requestOptions._showFailTipDuration;
+            }
+            wx.showToast(toastOptions);
         }
     }
     /**

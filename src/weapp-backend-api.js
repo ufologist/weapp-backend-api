@@ -16,8 +16,8 @@ import extend from 'extend';
  */
 class BackendApi {
     /**
-     * @param apiConfig {object} 后端 HTTP 接口的配置, 将 HTTP 接口的调用视为一次远程调用(RPC)
-     *        配置项是请求参数
+     * @param {object} apiConfig 后端 HTTP 接口的配置, 将 HTTP 接口的调用视为一次远程调用(RPC)
+     *        配置项是接口名称和请求参数的映射
      *        例如
      *        {
      *            'getList': {
@@ -29,9 +29,11 @@ class BackendApi {
      *                url: 'https://domain.com/detail'
      *            }
      *        }
-     * @param defaultRequestOptions 默认的请求参数
-     * @param logLevel 日志级别, 默认为 FATAL 级别
-     *        http://commons.apache.org/proper/commons-logging/javadocs/api-release/org/apache/commons/logging/Log.html
+     * @param {object} defaultRequestOptions 默认的请求参数
+     * @param {number} logLevel 日志级别, 默认为 FATAL 级别
+     *                 http://commons.apache.org/proper/commons-logging/javadocs/api-release/org/apache/commons/logging/Log.html
+     *                 TODO: 如果微信小程序支持获取当前运行的版本(开发版/体验版/线上版),
+     *                 那么日志级别的默认值可以根据运行的版本来判断, 非线上版本自动为 DEBUG 级别
      */
     constructor(apiConfig = {}, defaultRequestOptions = {}, logLevel = LOG_LEVEL.FATAL) {
         this.apiConfig = apiConfig;
@@ -42,17 +44,42 @@ class BackendApi {
         this.sending = [];
     }
     /**
+     * 发送请求前的统一处理
+     * 
+     * @abstract
+     * @param {object} requestOptions
+     * @return {undefined|Promise}
+     */
+    beforeSend(requestOptions) {}
+    /**
+     * 请求结束后的统一处理
+     * 
+     * @abstract
+     * @param {object} requestOptions 
+     */
+    afterSend(requestOptions) {}
+    /**
      * 统一发送(接口)请求的方法
      * 
      * @param {string} name 接口的名称
-     *                      针对接口 URL 中有 path 参数的情况, 需要在 name 中加入斜杠来标识,
-     *                      如果不使用这个参数, 也可以发请求, 但不推荐这么使用, 应该将所有接口都配置好
      * @param {object} options 请求参数
      * @return {Promise}
      */
     sendRequest(name, options) {
+        var requestOptions = this._getRequestOptions(name, options);
+        return this.$sendHttpRequest(requestOptions);
+    }
+    /**
+     * 获取请求的参数
+     * 
+     * @param {string} name 接口的名称, 既配置在 `apiConfig` 中的 key
+     *                      针对接口 URL 中有 path 参数的情况, 需要在 name 中加入斜杠来标识,
+     *                      如果不使用这个参数, 也可以发请求, 但不推荐这么使用, 应该将所有接口都配置好
+     * @param {object} options 请求参数
+     * @return {object}
+     */
+    _getRequestOptions(name, options) {
         var api;
-        var requestOptions;
 
         if (name) {
             var _name = name;
@@ -77,12 +104,12 @@ class BackendApi {
             }
         }
 
-        requestOptions = extend(true, {}, this.defaultRequestOptions, api, options);
-        return this.$sendHttpRequest(requestOptions);
+        return extend(true, {}, this.defaultRequestOptions, api, options);
     }
     /**
      * 发送 HTTP 请求的具体实现
      * 
+     * @abstract
      * @param {object} requestOptions 请求参数
      * @return {Promise}
      */
@@ -117,8 +144,7 @@ class WeappBackendApi extends BackendApi {
         super(apiConfig, defaultRequestOptions, logLevel);
     }
     /**
-     * 请求发送前的统一处理
-     * 
+     * @override
      * @param {object} requestOptions 
      */
     beforeSend(requestOptions) {
@@ -127,8 +153,7 @@ class WeappBackendApi extends BackendApi {
         }
     }
     /**
-     * 请求结束后的统一处理
-     * 
+     * @override
      * @param {object} requestOptions 
      */
     afterSend(requestOptions) {
@@ -151,6 +176,7 @@ class WeappBackendApi extends BackendApi {
     /**
      * 发送 HTTP 请求
      * 
+     * @override
      * @param {object} requestOptions wx.requesst options
      * @return {Promise}
      */
@@ -183,6 +209,7 @@ class WeappBackendApi extends BackendApi {
 
             this.beforeSend(requestOptions);
             wx.request(requestOptions);
+
             this.sending.push(requestOptions);
         }).then((requestResult) => {
             return this._successHandler(requestOptions, requestResult);
@@ -324,6 +351,7 @@ class WeappBackendApi extends BackendApi {
     /**
      * 对错误状态的处理
      * 
+     * @abstract
      * @param {object} requestOptions wx.request options
      * @param {object} requestResult wx.request success 或者 fail 返回的结果
      */

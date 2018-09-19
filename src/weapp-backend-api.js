@@ -118,9 +118,11 @@ class BackendApi {
             if (_api) {
                 api = extend(true, {}, _api);
                 api.url = api.url + urlAppend;
-            } else if (!options.url) {
-                console.warn('没有找到对应的接口配置, 也没有配置 URL', _name, options, this.apiConfig);
+            } else {
+                console.warn('没有找到对应的接口配置', _name, this.apiConfig);
             }
+        } else {
+            console.warn('没有配置接口', options);
         }
 
         return extend(true, {}, this.defaultRequestOptions, api, options);

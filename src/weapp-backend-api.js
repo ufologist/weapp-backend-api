@@ -1,5 +1,6 @@
 import extend from 'extend';
 import md5 from 'blueimp-md5';
+import Logger from 'simple-console-log-level';
 
 /**
  * 统一封装后端接口的调用
@@ -31,18 +32,19 @@ class BackendApi {
      *            }
      *        }
      * @param {object} defaultRequestOptions 默认的请求参数
-     * @param {number} logLevel 日志级别, 默认为 FATAL 级别
-     *                 http://commons.apache.org/proper/commons-logging/javadocs/api-release/org/apache/commons/logging/Log.html
+     * @param {number} loggerLevel 日志级别, 默认为 Logger.LEVEL_WARN 级别
      *                 TODO: 如果微信小程序支持获取当前运行的版本(开发版/体验版/线上版),
-     *                 那么日志级别的默认值可以根据运行的版本来判断, 非线上版本自动为 DEBUG 级别
+     *                 那么日志级别的默认值可以根据运行的版本来判断, 非线上版本自动为 TRACE 级别
      */
-    constructor(apiConfig = {}, defaultRequestOptions = {}, logLevel = LOG_LEVEL.FATAL) {
+    constructor(apiConfig = {}, defaultRequestOptions = {}, loggerLevel = Logger.LEVEL_WARN) {
         this.apiConfig = apiConfig;
         this.defaultRequestOptions = defaultRequestOptions;
-        this.logLevel = logLevel;
-
         // 正在发送的请求
         this.sending = {};
+
+        this.logger = new Logger({
+            level: loggerLevel
+        });
     }
 
     /**
@@ -119,10 +121,10 @@ class BackendApi {
                 api = extend(true, {}, _api);
                 api.url = api.url + urlAppend;
             } else {
-                console.warn('没有找到对应的接口配置', _name, this.apiConfig);
+                this.logger.warn('没有找到对应的接口配置', _name, this.apiConfig);
             }
         } else {
-            console.warn('没有配置接口', options);
+            this.logger.warn('没有配置接口', options);
         }
 
         return extend(true, {}, this.defaultRequestOptions, api, options);
@@ -173,8 +175,8 @@ class WeappBackendApi extends BackendApi {
     _interceptDuplicateRequest(requestOptions) {
         var requestInfoHash = this._getRequestInfoHash(requestOptions);
 
-        console.warn('拦截到重复请求', requestInfoHash, this.sending[requestInfoHash], this.sending);
-        console.log('----------------------');
+        this.logger.warn('拦截到重复请求', requestInfoHash, this.sending[requestInfoHash], this.sending);
+        this.logger.warn('----------------------');
 
         // 返回一个 pending 状态的 Promise, 阻止发送请求且不会触发任何回调
         return new Promise(function() {});
@@ -222,6 +224,14 @@ class WeappBackendApi extends BackendApi {
      */
     $sendHttpRequest(requestOptions) {
         return new Promise((resolve, reject) => {
+            // 因为调用过 wx.request(requestOptions) 之后, 请求的 URL 会被微信小程序的 API 改写,
+            // 即 requestOptions.url 参数会被改写,
+            // 例如原来的 URL 是: https://domian.com/a  data 是 {a:1}
+            // 那么 data 会被追加到 URL 上, 变成: https://domian.com/a?a=1
+            // 由于我们计算同一个请求的签名是根据 URL 来的, 如果前后 URL 不一致, 就会造成无法辨别出重复请求
+            // 因此这里我们需要保存原始的 URL 参数
+            requestOptions._url = requestOptions.url;
+
             // 收到开发者服务器成功返回的回调函数
             // 注意: 收到开发者服务器返回就会回调这个函数, 不管 HTTP 状态是否为 200 也算请求成功
             // requestResult 包含的属性有: statusCode, header, data, errMsg
@@ -273,13 +283,23 @@ class WeappBackendApi extends BackendApi {
      * @return {string} 请求关键信息组合的 MD5 值
      */
     _getRequestInfoHash(requestOptions) {
-        var requestInfo = requestOptions.method + ' ' + requestOptions.url + ' ' + requestOptions.data;
+        var data = '';
+        if (requestOptions.data) {
+            try {
+                data = JSON.stringify(requestOptions.data);
+            } catch (error) {
+                data = requestOptions.data.toString();
+                this.logger.warn('获取一个请求数据的 JSON 字符串失败', requestOptions.data, error);
+            }
+        }
+
+        var requestInfo = requestOptions.method + ' ' + requestOptions._url + ' ' + data;
 
         var requestInfoHash = requestInfo;
         try {
             requestInfoHash = md5(requestInfo);
         } catch (error) {
-            console.error('获取一个请求的关键信息的 MD5 失败', requestInfo);
+            this.logger.warn('获取一个请求的关键信息的 MD5 失败', requestInfo, error);
         }
 
         return requestInfoHash;
@@ -302,7 +322,7 @@ class WeappBackendApi extends BackendApi {
         var requestInfoHash = this._getRequestInfoHash(requestOptions);
         var result = delete this.sending[requestInfoHash];
         if (!result) {
-            console.warn('将请求从发送中的队列中移除失败', requestInfoHash, requestOptions);
+            this.logger.warn('将请求从发送中的队列中移除失败', requestInfoHash, requestOptions);
         }
     }
     /**
@@ -332,10 +352,9 @@ class WeappBackendApi extends BackendApi {
      */
     _successHandler(requestOptions, requestResult) {
         if (this.ifApiSuccess(requestOptions, requestResult)) {
-            if (this.logLevel <= LOG_LEVEL.DEBUG) {
-                console.log(requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
-                console.log('----------------------');
-            }
+            this.logger.log(requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
+            this.logger.log('----------------------');
+
             return [this.getRequestResult(requestOptions, requestResult), requestResult];
         } else { // 业务错误
             return this.commonFailStatusHandler(requestOptions, requestResult);
@@ -455,8 +474,8 @@ class WeappBackendApi extends BackendApi {
         // * 接口的参数
         // * 接口的返回状态
         // * 接口的返回数据
-        console.warn('接口调用出错(' + requestResult.statusCode + ')', requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
-        console.warn('----------------------');
+        this.logger.warn('接口调用出错(' + requestResult.statusCode + ')', requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
+        this.logger.warn('----------------------');
 
         this.commonFailTip(requestOptions, requestResult);
         this.failStatusHandler(requestOptions, requestResult);
@@ -505,14 +524,3 @@ WeappBackendApi.defaults = {
 };
 
 export default WeappBackendApi;
-/**
- * 日志级别
- */
-export const LOG_LEVEL = {
-    TRACE: 0,
-    DEBUG: 1,
-    INFO: 2,
-    WARN: 3,
-    ERROR: 4,
-    FATAL: 5
-};

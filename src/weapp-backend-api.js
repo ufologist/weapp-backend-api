@@ -44,6 +44,7 @@ class BackendApi {
         // 正在发送的请求
         this.sending = {};
     }
+
     /**
      * 发送请求前的统一处理
      * 
@@ -60,6 +61,7 @@ class BackendApi {
      * @param {object} requestResult
      */
     afterSend(requestOptions, requestResult) {}
+    
     /**
      * 统一发送(接口)请求的方法
      * 
@@ -71,6 +73,21 @@ class BackendApi {
         var requestOptions = this._getRequestOptions(name, options);
         return this.$sendHttpRequest(requestOptions);
     }
+
+    /**
+     * 发送 HTTP 请求的具体实现
+     * 
+     * @abstract
+     * @param {object} requestOptions 请求参数
+     * @return {Promise}
+     */
+    $sendHttpRequest(requestOptions) {
+        // 子类具体去实现
+        return new Promise(function(resolve, reject) {
+            reject('需要子类去实现发送 HTTP 请求');
+        });
+    }
+
     /**
      * 获取请求的参数
      * 
@@ -108,19 +125,6 @@ class BackendApi {
 
         return extend(true, {}, this.defaultRequestOptions, api, options);
     }
-    /**
-     * 发送 HTTP 请求的具体实现
-     * 
-     * @abstract
-     * @param {object} requestOptions 请求参数
-     * @return {Promise}
-     */
-    $sendHttpRequest(requestOptions) {
-        // 子类具体去实现
-        return new Promise(function(resolve, reject) {
-            reject('需要子类去实现发送 HTTP 请求');
-        });
-    }
 }
 
 /**
@@ -145,6 +149,7 @@ class WeappBackendApi extends BackendApi {
     constructor(apiConfig, defaultRequestOptions = WeappBackendApi.defaults.requestOptions, logLevel) {
         super(apiConfig, defaultRequestOptions, logLevel);
     }
+
     /**
      * @override
      * @return {undefined|Promise} 如果返回 Promise 则不会去发送请求
@@ -156,6 +161,7 @@ class WeappBackendApi extends BackendApi {
             this._showLoading(requestOptions);
         }
     }
+
     /**
      * 拦截重复请求
      * 
@@ -168,8 +174,10 @@ class WeappBackendApi extends BackendApi {
         console.warn('拦截到重复请求', requestInfoHash, this.sending[requestInfoHash], this.sending);
         console.log('----------------------');
 
+        // 返回一个 pending 状态的 Promise, 阻止发送请求且不会触发任何回调
         return new Promise(function() {});
     }
+
     /**
      * @override
      */
@@ -180,6 +188,7 @@ class WeappBackendApi extends BackendApi {
             this._hideLoading(requestOptions);
         }
     }
+
     _showLoading(requestOptions) {
         if (requestOptions._showLoading !== false) {
             wx.showLoading({
@@ -192,10 +201,12 @@ class WeappBackendApi extends BackendApi {
         // 因为发送了请求出去, 总要给予一定的反馈信息(例如移动网络有数据交互时的提示)
         wx.showNavigationBarLoading();
     }
+
     _hideLoading(requestOptions) {
         wx.hideLoading();
         wx.hideNavigationBarLoading();
     }
+
     /**
      * 发送 HTTP 请求
      * 
@@ -229,9 +240,6 @@ class WeappBackendApi extends BackendApi {
             requestOptions.fail = function(requestResult) {
                 reject(requestResult);
             };
-            requestOptions.complete = (requestResult) => {
-                this.afterSend(requestOptions, requestResult);
-            };
 
             var beforeSendResult = this.beforeSend(requestOptions);
             if (beforeSendResult) {
@@ -241,11 +249,17 @@ class WeappBackendApi extends BackendApi {
                 this._addToSending(requestOptions);
             }
         }).then((requestResult) => {
+            // 请求结束后的统一处理如果放在 complete 回调中就不方便实现重写请求返回的数据
+            // 例如接口返回的数据是加密的, 需要统一在 afterSend 中封装解密的逻辑, 改写请求返回的数据,
+            // 做到上层对数据的解密无感知
+            this.afterSend(requestOptions, requestResult);
             return this._successHandler(requestOptions, requestResult);
         }, (requestResult) => {
+            this.afterSend(requestOptions, requestResult);
             return this._failHandler(requestOptions, requestResult);
         });
     }
+
     /**
      * 获取一个请求的关键信息
      * 
@@ -268,6 +282,7 @@ class WeappBackendApi extends BackendApi {
 
         return requestInfoHash;
     }
+
     /**
      * 将请求放入到发送中的队列中
      * 
@@ -305,6 +320,7 @@ class WeappBackendApi extends BackendApi {
     _isAnySending() {
         return Object.keys(this.sending).length !== 0;
     }
+
     /**
      * 接口调用成功时的默认处理方法
      * 
@@ -323,6 +339,7 @@ class WeappBackendApi extends BackendApi {
             return this.commonFailStatusHandler(requestOptions, requestResult);
         }
     }
+
     /**
      * 接口调用失败时的默认处理方法
      * 
@@ -359,6 +376,7 @@ class WeappBackendApi extends BackendApi {
         requestResult.data = result;
         return this.commonFailStatusHandler(requestOptions, requestResult);
     }
+
     /**
      * 判断接口请求调用是否成功
      * 
@@ -371,6 +389,7 @@ class WeappBackendApi extends BackendApi {
         var result = requestResult.data;
         return !result.status || result.status === 0;
     }
+
     /**
      * 提取出接口返回的数据
      * 
@@ -383,6 +402,7 @@ class WeappBackendApi extends BackendApi {
         var result = requestResult.data;
         return result.data;
     }
+
     /**
      * 接口出错时统一弹出错误提示信息
      * 
@@ -414,6 +434,7 @@ class WeappBackendApi extends BackendApi {
             wx.showToast(toastOptions);
         }
     }
+
     /**
      * 当接口处理失败时通用的错误状态处理
      * 
@@ -439,6 +460,7 @@ class WeappBackendApi extends BackendApi {
         this.failStatusHandler(requestOptions, requestResult);
         return Promise.reject(requestResult);
     }
+
     /**
      * 对错误状态的处理
      * 

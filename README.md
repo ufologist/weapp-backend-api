@@ -50,14 +50,18 @@ var backendApi = new BackendApi({
     }
 }, undefined, Logger.LEVEL_WARN);
 
-backendApi.sendRequest('getList').then(function([data]) {
+backendApi.sendRequest('getList', {
+    // wx.request options
+}).then(function([data]) {
     console.log(data);
 }, function(requestResult) {
     console.log(requestResult);
 });
 
 // 支持 RESTful 风格
-backendApi.sendRequest('getUser/1').then(function([data]) {
+backendApi.sendRequest('getUser/1', {
+    // wx.request options
+}).then(function([data]) {
     console.log(data);
 }, function(requestResult) {
     console.log(requestResult);

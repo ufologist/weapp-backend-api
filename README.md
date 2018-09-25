@@ -20,7 +20,7 @@
 - 支持日志级别参数, 用于在调试阶段输出每个请求的信息
 - 预留扩展点(继承覆盖的方式)
   - `beforeSend(requestOptions)`
-  - `afterSend(requestOptions)`
+  - `afterSend(requestOptions, requestResult)`
   - `ifApiSuccess(requestOptions, requestResult)`
   - `getRequestResult(requestOptions, requestResult)`
   - `commonFailStatusHandler(requestOptions, requestResult)`
@@ -37,9 +37,7 @@ npm install weapp-backend-api --save
 
 ```javascript
 import BackendApi from 'weapp-backend-api';
-import {
-    LOG_LEVEL
-} from 'weapp-backend-api';
+import Logger from 'simple-console-log-level';
 
 var backendApi = new BackendApi({
     'getList': {
@@ -50,7 +48,7 @@ var backendApi = new BackendApi({
         method: 'GET',
         url: 'https://domain.com/user'
     }
-}, null, LOG_LEVEL.DEBUG);
+}, undefined, Logger.LEVEL_WARN);
 
 backendApi.sendRequest('getList').then(function([data]) {
     console.log(data);
@@ -64,13 +62,13 @@ backendApi.sendRequest('getUser/1').then(function([data]) {
 }, function(requestResult) {
     console.log(requestResult);
 });
-
-// 支持静默模式, 静默模式下接口调用出错不给用户提示错误消息
-backendApi.sendRequest('getList', {
-    _silent: true
-}).then(function([data]) {
-    console.log(data);
-}, function(requestResult) {
-    console.log(requestResult);
-});
 ```
+
+## 实现的自定义请求参数
+
+* `_showLoading` 默认发送请求时会显示一个正在加载中的提示
+* `_showLoadingMask` 默认发送请求时不开启加载中的蒙层
+* `_showFailTip` 默认请求失败时会给用户提示错误消息
+* `_showFailTipDuration` 接口调用出错时错误信息的显示多长时间(ms), 默认是 `wx.showToast` 的显示时间
+* `_interceptDuplicateRequest` 默认不拦截重复请求
+* `_cacheTtl` 缓存接口返回的数据, 设置缓存数据的存活时长(ms)

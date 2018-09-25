@@ -2,6 +2,8 @@ import extend from 'extend';
 import md5 from 'blueimp-md5';
 import Logger from 'simple-console-log-level';
 
+import SimpleStorage from 'weapp-simple-storage';
+
 /**
  * 统一封装后端接口的调用
  * 
@@ -43,7 +45,8 @@ class BackendApi {
         this.sending = {};
 
         this.logger = new Logger({
-            level: loggerLevel
+            level: loggerLevel,
+            prefix: '[backend-api]'
         });
     }
 
@@ -150,8 +153,13 @@ class BackendApi {
  * });
  */
 class WeappBackendApi extends BackendApi {
-    constructor(apiConfig, defaultRequestOptions = WeappBackendApi.defaults.requestOptions, logLevel) {
-        super(apiConfig, defaultRequestOptions, logLevel);
+    constructor(apiConfig, defaultRequestOptions = WeappBackendApi.defaults.requestOptions, loggerLevel) {
+        super(apiConfig, defaultRequestOptions, loggerLevel);
+
+        this.simpleStorage = new SimpleStorage({
+            name: 'backend-api-cache',
+            loggerLevel: loggerLevel
+        });
     }
 
     /**
@@ -159,9 +167,13 @@ class WeappBackendApi extends BackendApi {
      * @return {undefined|Promise} 如果返回 Promise 则不会去发送请求
      */
     beforeSend(requestOptions) {
+        var cachedRequestResult = this.simpleStorage.get(this._getRequestInfoHash(requestOptions));
+
         if (this._isSending(requestOptions) && requestOptions._interceptDuplicateRequest) {
             return this._interceptDuplicateRequest(requestOptions);
-        } else {
+        } else if (cachedRequestResult) {
+            return Promise.resolve(cachedRequestResult);
+        } else { // 前面的请求可能没有开启 loading, 因此不能判断 !this._isAnySending()
             this._showLoading(requestOptions);
         }
     }
@@ -221,46 +233,50 @@ class WeappBackendApi extends BackendApi {
      *                 requestOptions._interceptDuplicateRequest {boolean} 是否拦截重复请求
      *                 requestOptions._showFailTip {boolean} 接口调用出错时是否给用户提示错误消息
      *                 requestOptions._showFailTipDuration {number} 接口调用出错时错误信息的显示多长时间(ms)
+     *                 requestOptions._cacheTtl {number} 缓存的存活时间(ms)
      */
     $sendHttpRequest(requestOptions) {
-        return new Promise((resolve, reject) => {
-            // 因为调用过 wx.request(requestOptions) 之后, 请求的 URL 会被微信小程序的 API 改写,
-            // 即 requestOptions.url 参数会被改写,
-            // 例如原来的 URL 是: https://domian.com/a  data 是 {a:1}
-            // 那么 data 会被追加到 URL 上, 变成: https://domian.com/a?a=1
-            // 由于我们计算同一个请求的签名是根据 URL 来的, 如果前后 URL 不一致, 就会造成无法辨别出重复请求
-            // 因此这里我们需要保存原始的 URL 参数
-            requestOptions._url = requestOptions.url;
+        // 因为调用过 wx.request(requestOptions) 之后, 请求的 URL 会被微信小程序的 API 改写,
+        // 即 requestOptions.url 参数会被改写,
+        // 例如原来的 URL 是: https://domian.com/a  data 是 {a:1}
+        // 那么 data 会被追加到 URL 上, 变成: https://domian.com/a?a=1
+        // 由于我们计算同一个请求的签名是根据 URL 来的, 如果前后 URL 不一致, 就会造成无法辨别出重复请求
+        // 因此这里我们需要保存原始的 URL 参数
+        requestOptions._url = requestOptions.url;
 
-            // 收到开发者服务器成功返回的回调函数
-            // 注意: 收到开发者服务器返回就会回调这个函数, 不管 HTTP 状态是否为 200 也算请求成功
-            // requestResult 包含的属性有: statusCode, header, data, errMsg
-            requestOptions.success = function(requestResult) {
-                // Determine if HTTP request successful | jQuery
-                var isSuccess = requestResult.statusCode >= 200 && requestResult.statusCode < 300 || requestResult.statusCode === 304;
+        var promise = null;
+        var beforeSendResult = this.beforeSend(requestOptions);
+        if (beforeSendResult) {
+            promise = beforeSendResult;
+        } else {
+            promise = new Promise((resolve, reject) => {
+                // 收到开发者服务器成功返回的回调函数
+                // 注意: 收到开发者服务器返回就会回调这个函数, 不管 HTTP 状态是否为 200 也算请求成功
+                // requestResult 包含的属性有: statusCode, header, data, errMsg
+                requestOptions.success = function(requestResult) {
+                    // Determine if HTTP request successful | jQuery
+                    var isSuccess = requestResult.statusCode >= 200 && requestResult.statusCode < 300 || requestResult.statusCode === 304;
 
-                if (isSuccess) {
-                    resolve(requestResult);
-                } else { // HTTP 请求失败
+                    if (isSuccess) {
+                        resolve(requestResult);
+                    } else { // HTTP 请求失败
+                        reject(requestResult);
+                    }
+                };
+                // 接口调用失败的回调函数
+                // 这个指 wx.request API 调用失败的情况,
+                // 例如没有传 url 参数或者传入的 url 格式错误之类的错误情况
+                // 这时不会有 statusCode 字段, 会有 errMsg 字段
+                requestOptions.fail = function(requestResult) {
                     reject(requestResult);
-                }
-            };
-            // 接口调用失败的回调函数
-            // 这个指 wx.request API 调用失败的情况,
-            // 例如没有传 url 参数或者传入的 url 格式错误之类的错误情况
-            // 这时不会有 statusCode 字段, 会有 errMsg 字段
-            requestOptions.fail = function(requestResult) {
-                reject(requestResult);
-            };
+                };
 
-            var beforeSendResult = this.beforeSend(requestOptions);
-            if (beforeSendResult) {
-                return beforeSendResult;
-            } else {
                 wx.request(requestOptions);
                 this._addToSending(requestOptions);
-            }
-        }).then((requestResult) => {
+            });
+        }
+
+        return promise.then((requestResult) => {
             // 请求结束后的统一处理如果放在 complete 回调中就不方便实现重写请求返回的数据
             // 例如接口返回的数据是加密的, 需要统一在 afterSend 中封装解密的逻辑, 改写请求返回的数据,
             // 做到上层对数据的解密无感知
@@ -355,7 +371,16 @@ class WeappBackendApi extends BackendApi {
             this.logger.log(requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
             this.logger.log('----------------------');
 
-            return [this.getRequestResult(requestOptions, requestResult), requestResult];
+            var requestInfoHash = this._getRequestInfoHash(requestOptions);
+            if (requestOptions._cacheTtl >= 0) {
+                if (!this.simpleStorage.has(requestInfoHash)) {
+                    this.simpleStorage.set(requestInfoHash, requestResult, {
+                        ttl: requestOptions._cacheTtl
+                    });
+                }
+            }
+
+            return [this.getRequestResult(requestOptions, requestResult), requestResult];;
         } else { // 业务错误
             return this.commonFailStatusHandler(requestOptions, requestResult);
         }

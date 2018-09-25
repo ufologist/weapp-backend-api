@@ -19,13 +19,13 @@
 - Promise 风格
 - 支持日志级别参数, 用于在调试阶段输出每个请求的信息
 - 预留扩展点(继承覆盖的方式)
-  - `beforeSend(requestOptions)`
-  - `afterSend(requestOptions, requestResult)`
-  - `ifApiSuccess(requestOptions, requestResult)`
-  - `getRequestResult(requestOptions, requestResult)`
-  - `commonFailStatusHandler(requestOptions, requestResult)`
-  - `commonFailTip(requestOptions, requestResult)`
-  - `failStatusHandler(requestOptions, requestResult)`
+  - `beforeSend(requestOptions)` 发送请求前的统一处理, 如果返回一个 Promise 可以阻止发送请求
+  - `afterSend(requestOptions, requestResult)` 请求结束后的统一处理
+  - `ifApiSuccess(requestOptions, requestResult)` 判断接口请求调用是否成功
+  - `getRequestResult(requestOptions, requestResult)` 提取出接口返回的数据
+  - `commonFailStatusHandler(requestOptions, requestResult)` 当接口处理失败时通用的错误状态处理
+  - `commonFailTip(requestOptions, requestResult)` 接口出错时统一弹出错误提示信息
+  - `failStatusHandler(requestOptions, requestResult)` 对错误状态的处理
 
 ## 安装
 
@@ -74,5 +74,5 @@ backendApi.sendRequest('getUser/1', {
 * `_showLoadingMask` 默认发送请求时不开启加载中的蒙层
 * `_showFailTip` 默认请求失败时会给用户提示错误消息
 * `_showFailTipDuration` 接口调用出错时错误信息的显示多长时间(ms), 默认是 `wx.showToast` 的显示时间
-* `_interceptDuplicateRequest` 默认不拦截重复请求
+* `_interceptDuplicateRequest` 是否拦截重复请求, 默认不拦截重复请求
 * `_cacheTtl` 缓存接口返回的数据, 设置缓存数据的存活时长(ms)

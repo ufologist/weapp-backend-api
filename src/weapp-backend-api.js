@@ -163,6 +163,11 @@ class WeappBackendApi extends BackendApi {
     }
 
     /**
+     * 内置如下功能
+     * - 拦截重复请求, 不发送请求
+     * - 获取接口缓存数据的机制, 存在缓存数据则直接读取缓存数据, 不发送请求
+     * - 显示 loading 提示
+     * 
      * @override
      * @return {undefined|Promise} 如果返回 Promise 则不会去发送请求
      */
@@ -195,6 +200,9 @@ class WeappBackendApi extends BackendApi {
     }
 
     /**
+     * 内置如下功能
+     * - 关闭 loading 提示
+     * 
      * @override
      */
     afterSend(requestOptions, requestResult) {

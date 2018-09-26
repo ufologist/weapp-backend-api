@@ -23,9 +23,17 @@
   - `afterSend(requestOptions, requestResult)` 请求结束后的统一处理
   - `ifApiSuccess(requestOptions, requestResult)` 判断接口请求调用是否成功
   - `getRequestResult(requestOptions, requestResult)` 提取出接口返回的数据
+  - `getFailTipMessage(requestOptions, requestResult)` 获取给用户的错误提示
+  - `failStatusHandler(requestOptions, requestResult)` 对错误状态的处理
   - `commonFailStatusHandler(requestOptions, requestResult)` 当接口处理失败时通用的错误状态处理
   - `commonFailTip(requestOptions, requestResult)` 接口出错时统一弹出错误提示信息
-  - `failStatusHandler(requestOptions, requestResult)` 对错误状态的处理
+
+## 调用后端接口的统一流程
+
+```
+发送请求 -> 从配置中获取请求的参数 -> 发送 HTTP 请求的具体实现 -> 发送请求前的统一处理 -> 请求结束后的统一处理 -> 接口调用成功时的默认处理方法
+-> 接口调用失败时的默认处理方法
+```
 
 ## 安装
 
@@ -68,7 +76,7 @@ backendApi.sendRequest('getUser/1', {
 });
 ```
 
-## 实现的自定义请求参数
+## 实现的自定义请求参数(options)
 
 * `_showLoading` 默认发送请求时会显示一个正在加载中的提示
 * `_showLoadingMask` 默认发送请求时不开启加载中的蒙层

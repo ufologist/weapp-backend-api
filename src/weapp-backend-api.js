@@ -458,38 +458,6 @@ class WeappBackendApi extends BackendApi {
     }
 
     /**
-     * 接口出错时统一弹出错误提示信息
-     * 
-     * 例如: 提供给用户看的消息格式参考 QQ 的错误提示消息
-     * 提示消息
-     * (错误码:result.statusInfo.message)灰色字
-     * 
-     * @param {object} requestOptions wx.request options
-     * @param {object} requestResult wx.request success 或者 fail 返回的结果
-     */
-    commonFailTip(requestOptions, requestResult) {
-        var result = requestResult.data;
-        var message = result.statusInfo ? result.statusInfo.message : WeappBackendApi.defaults.FAIL_MESSAGE;
-        if (result.status) {
-            message = message + '\n' + '(错误码:' + result.status + ')';
-        }
-
-        // 在一些场景下需要, 例如提示用户登录的时候, 不希望看见一个错误提示, 或者想自定义错误提示的时候
-        if (requestOptions._showFailTip !== false) {
-            // XXX 由于 wx.showLoading 底层就是调用的 showToast,
-            // toast 实现是单例, 全局只有一个, 因此使用 showToast 会造成 loading 被关掉
-            var toastOptions = {
-                icon: 'none',
-                title: message
-            };
-            if (typeof requestOptions._showFailTipDuration != 'undefined') {
-                toastOptions.duration = requestOptions._showFailTipDuration;
-            }
-            wx.showToast(toastOptions);
-        }
-    }
-
-    /**
      * 当接口处理失败时通用的错误状态处理
      * 
      * 例如:
@@ -510,8 +478,8 @@ class WeappBackendApi extends BackendApi {
         this.logger.warn('接口调用出错(' + requestResult.statusCode + ')', requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
         this.logger.warn('----------------------');
 
-        this.commonFailTip(requestOptions, requestResult);
         this.failStatusHandler(requestOptions, requestResult);
+        this.commonFailTip(requestOptions, requestResult);
         return Promise.reject(requestResult);
     }
 
@@ -531,6 +499,50 @@ class WeappBackendApi extends BackendApi {
         // } else if (result.status == 401) {
         //     // XXX your code here
         // }
+    }
+
+    /**
+     * 接口出错时统一弹出错误提示信息
+     * 
+     * @param {object} requestOptions wx.request options
+     * @param {object} requestResult wx.request success 或者 fail 返回的结果
+     */
+    commonFailTip(requestOptions, requestResult) {
+        var message = this.getFailTipMessage(requestOptions, requestResult)
+        // 在一些场景下需要, 例如提示用户登录的时候, 不希望看见一个错误提示, 或者想自定义错误提示的时候
+        if (requestOptions._showFailTip !== false) {
+            // XXX 由于 wx.showLoading 底层就是调用的 showToast,
+            // toast 实现是单例, 全局只有一个, 因此使用 showToast 会造成 loading 被关掉
+            var toastOptions = {
+                icon: 'none',
+                title: message
+            };
+            if (typeof requestOptions._showFailTipDuration != 'undefined') {
+                toastOptions.duration = requestOptions._showFailTipDuration;
+            }
+            wx.showToast(toastOptions);
+        }
+    }
+    /**
+     * 获取给用户的错误提示
+     * 
+     * 例如: 提供给用户看的消息格式参考 QQ 的错误提示消息
+     * 提示消息
+     * (错误码: xxx)灰色字
+     * 
+     * @param {object} requestOptions 
+     * @param {object} requestResult 
+     * @return {string}
+     */
+    getFailTipMessage(requestOptions, requestResult) {
+        var result = requestResult.data;
+        var message = result.statusInfo ? result.statusInfo.message : WeappBackendApi.defaults.FAIL_MESSAGE;
+
+        if (result.status) {
+            message = message + '\n' + '(错误码:' + result.status + ')';
+        }
+
+        return message;
     }
 }
 

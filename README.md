@@ -13,10 +13,10 @@
 
 - 集中配置接口
 - 统一发送请求
-  - `sendRequest(name, options)`
 - 统一处理请求的返回
 - 统一异常处理
 - Promise 风格
+  - `sendRequest(name, options).then`
 - 支持日志级别参数, 用于在调试阶段输出每个请求的信息
 - 预留扩展点(继承覆盖的方式)
   - `beforeSend(requestOptions)` 发送请求前的统一处理, 如果返回一个 Promise 可以阻止发送请求
@@ -30,10 +30,34 @@
 
 ## 调用后端接口的统一流程
 
-```
-发送请求 -> 从配置中获取请求的参数 -> 发送 HTTP 请求的具体实现 -> 发送请求前的统一处理 -> 请求结束后的统一处理 -> 接口调用成功时的默认处理方法
--> 接口调用失败时的默认处理方法
-```
+### 准备
+
+* 配置接口的参数(`apiConfig` 中的)
+* 配置接口的默认参数(`defaultRequestOptions` 中的)
+* 组装接口的参数(合并默认的参数/配置的参数/本次请求的参数)
+
+### 发送
+
+* 发送请求前的统一处理
+  * 查找请求队列拦截重复请求(**不发送请求**)
+  * 查找接口缓存数据, 如果存在则直接返回缓存数据(**不发送请求**)
+  * 显示 loading 提示
+* 发送 HTTP 请求(具体平台具体实现)
+  * 将请求加入到请求队列
+* 请求结束后的统一处理
+  * 将请求从请求队列中移除
+  * 关闭 loading 提示
+
+### 完成
+
+* 发送请求成功时的默认处理方法
+  * 判断 `HTTP` 请求是否成功
+  * 判断接口调用是否成功(需要[统一规范接口返回的数据格式](https://github.com/f2e-journey/treasure/blob/master/api.md#%E6%8E%A5%E5%8F%A3%E8%BF%94%E5%9B%9E%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84))
+  * 提取出接口返回的数据(需要[统一规范接口返回的数据格式](https://github.com/f2e-journey/treasure/blob/master/api.md#%E6%8E%A5%E5%8F%A3%E8%BF%94%E5%9B%9E%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84))
+  * 将接口数据写入缓存
+* 发送请求失败时的默认处理方法
+  * 统一展示标准的错误提示(需要[统一规范接口返回的数据格式](https://github.com/f2e-journey/treasure/blob/master/api.md#%E6%8E%A5%E5%8F%A3%E8%BF%94%E5%9B%9E%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84))
+  * 统一做通用的错误处理(例如用户 `session` 超时, 引导用户重新登录)(需要[统一规范接口返回的数据格式](https://github.com/f2e-journey/treasure/blob/master/api.md#%E6%8E%A5%E5%8F%A3%E8%BF%94%E5%9B%9E%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84))
 
 ## 安装
 
@@ -81,6 +105,6 @@ backendApi.sendRequest('getUser/1', {
 * `_showLoading` 默认发送请求时会显示一个正在加载中的提示
 * `_showLoadingMask` 默认发送请求时不开启加载中的蒙层
 * `_showFailTip` 默认请求失败时会给用户提示错误消息
-* `_showFailTipDuration` 接口调用出错时错误信息的显示多长时间(ms), 默认是 `wx.showToast` 的显示时间
+* `_showFailTipDuration` 接口调用出错时错误信息显示多长的时间(ms), 默认为 `wx.showToast` 默认的显示时长
 * `_interceptDuplicateRequest` 是否拦截重复请求, 默认不拦截重复请求
 * `_cacheTtl` 缓存接口返回的数据, 设置缓存数据的存活时长(ms)

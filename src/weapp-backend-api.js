@@ -164,8 +164,8 @@ class WeappBackendApi extends BackendApi {
 
     /**
      * 内置如下功能
-     * - 拦截重复请求, 不发送请求
-     * - 获取接口缓存数据的机制, 存在缓存数据则直接读取缓存数据, 不发送请求
+     * - 查询请求队列拦截重复请求(不发送请求)
+     * - 获取接口缓存数据的机制, 存在缓存数据则直接读取缓存数据(不发送请求)
      * - 显示 loading 提示
      * 
      * @override
@@ -177,6 +177,9 @@ class WeappBackendApi extends BackendApi {
         if (this._isSending(requestOptions) && requestOptions._interceptDuplicateRequest) {
             return this._interceptDuplicateRequest(requestOptions);
         } else if (cachedRequestResult) {
+            this.logger.log('----------------------');
+            this.logger.log('from cache');
+            this.logger.log('----------------------');
             return Promise.resolve(cachedRequestResult);
         } else { // 前面的请求可能没有开启 loading, 因此不能判断 !this._isAnySending()
             this._showLoading(requestOptions);
@@ -201,6 +204,7 @@ class WeappBackendApi extends BackendApi {
 
     /**
      * 内置如下功能
+     * - 清理请求队列
      * - 关闭 loading 提示
      * 
      * @override

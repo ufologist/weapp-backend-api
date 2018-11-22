@@ -1,5 +1,14 @@
 # CHANGELOG
 
+* v0.0.5 2018-11-22
+
+  * 实现接口错误码规范
+    * **删除了 `WeappBackendApi.defaults.REQUEST_HTTP_FAIL_STATUS` 属性**
+    * **调整 `WeappBackendApi.defaults.REQUEST_API_FAIL_STATUS` 的值为 `20000 -> 1`**
+  * 标准化接口返回的数据格式, 方便适配各种接口返回数据格式不同的情况
+    * `normalizeRequestResult` 适配接口数据的默认方法
+    * `options._normalizeRequestResult` 适配单个接口返回的数据以符合[标准的接口数据格式](https://github.com/f2e-journey/treasure/blob/master/api.md#%E6%8E%A5%E5%8F%A3%E8%BF%94%E5%9B%9E%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84)
+
 * v0.0.4 2018-9-26
 
   * 提取 `getFailTipMessage` 用于自定义获取给用户的错误提示

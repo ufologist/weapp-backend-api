@@ -21,8 +21,8 @@
 - 预留扩展点(继承覆盖的方式)
   - `beforeSend(requestOptions)` 发送请求前的统一处理, 如果返回一个 Promise 可以阻止发送请求
   - `afterSend(requestOptions, requestResult)` 请求结束后的统一处理
+  - `normalizeRequestResult(requestOptions, requestResult)` 标准化接口返回的数据格式, 方便适配各种接口返回数据格式不同的情况
   - `ifApiSuccess(requestOptions, requestResult)` 判断接口请求调用是否成功
-  - `getRequestResult(requestOptions, requestResult)` 提取出接口返回的数据
   - `getFailTipMessage(requestOptions, requestResult)` 获取给用户的错误提示
   - `failStatusHandler(requestOptions, requestResult)` 对错误状态的处理
   - `commonFailStatusHandler(requestOptions, requestResult)` 当接口处理失败时通用的错误状态处理
@@ -108,3 +108,4 @@ backendApi.sendRequest('getUser/1', {
 * `_showFailTipDuration` 接口调用出错时错误信息显示多长的时间(ms), 默认为 `wx.showToast` 默认的显示时长
 * `_interceptDuplicateRequest` 是否拦截重复请求, 默认不拦截重复请求
 * `_cacheTtl` 缓存接口返回的数据, 设置缓存数据的存活时长(ms)
+* `_normalizeRequestResult` 适配单个接口返回的数据以符合[标准的接口数据格式](https://github.com/f2e-journey/treasure/blob/master/api.md#%E6%8E%A5%E5%8F%A3%E8%BF%94%E5%9B%9E%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84)

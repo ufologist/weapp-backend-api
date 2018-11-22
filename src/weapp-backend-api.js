@@ -132,6 +132,27 @@ class BackendApi {
 
         return extend(true, {}, this.defaultRequestOptions, api, options);
     }
+
+    /**
+     * 标准化接口返回的数据格式, 方便适配各种接口返回数据格式不同的情况
+     * 
+     * 例如标准格式为:
+     * {
+     *     "status": 0,
+     *     "data": {},
+     *     "statusInfo": {
+     *         "message": "foo",
+     *         "detail": "bar"
+     *     }
+     * }
+     * 
+     * @param {any} requestOptions
+     * @param {any} requestResult
+     * @return {any}
+     */
+    normalizeRequestResult(requestOptions, requestResult) {
+        return requestResult;
+    }
 }
 
 /**
@@ -246,6 +267,7 @@ class WeappBackendApi extends BackendApi {
      *                 requestOptions._showFailTip {boolean} 接口调用出错时是否给用户提示错误消息
      *                 requestOptions._showFailTipDuration {number} 接口调用出错时错误信息的显示多长时间(ms)
      *                 requestOptions._cacheTtl {number} 缓存的存活时间(ms)
+     *                 requestOptions._normalizeRequestResult {function} 标准化接口返回的数据格式
      */
     $sendHttpRequest(requestOptions) {
         // 因为调用过 wx.request(requestOptions) 之后, 请求的 URL 会被微信小程序的 API 改写,
@@ -392,7 +414,7 @@ class WeappBackendApi extends BackendApi {
                 }
             }
 
-            return [this.getRequestResult(requestOptions, requestResult), requestResult];;
+            return [this.getRequestResult(requestOptions, requestResult), requestResult];
         } else { // 业务错误
             return this.commonFailStatusHandler(requestOptions, requestResult);
         }
@@ -467,8 +489,22 @@ class WeappBackendApi extends BackendApi {
      */
     ifApiSuccess(requestOptions, requestResult) {
         // 接口返回的数据
-        var result = requestResult.data;
+        var result = this._getNormalizeRequestResult(requestOptions, requestResult);
         return !result.status || result.status === 0;
+    }
+
+    /**
+     * 获取标准化的接口返回数据
+     * 
+     * @param {object} requestOptions 
+     * @param {object} requestResult 
+     * @return {object}
+     */
+    _getNormalizeRequestResult(requestOptions, requestResult) {
+        var _normalizeRequestResult = requestOptions._normalizeRequestResult ?
+                                      requestOptions._normalizeRequestResult : this.normalizeRequestResult;
+
+        return _normalizeRequestResult.apply(this, [requestOptions, requestResult.data]);
     }
 
     /**
@@ -479,8 +515,7 @@ class WeappBackendApi extends BackendApi {
      * @return {object}
      */
     getRequestResult(requestOptions, requestResult) {
-        // 接口返回的数据
-        var result = requestResult.data;
+        var result = this._getNormalizeRequestResult(requestOptions, requestResult);
         return result.data;
     }
 
@@ -562,18 +597,17 @@ class WeappBackendApi extends BackendApi {
      * @return {string}
      */
     getFailTipMessage(requestOptions, requestResult) {
-        var result = requestResult.data;
-        var message = result.statusInfo ? result.statusInfo.message : WeappBackendApi.defaults.FAIL_MESSAGE;
+        var result = this._getNormalizeRequestResult(requestOptions, requestResult);
+
+        var message = result.statusInfo && result.statusInfo.message ?
+                      result.statusInfo.message : WeappBackendApi.defaults.FAIL_MESSAGE;
 
         if (!result._errorType) {
             result._errorType = 'B';
         }
+        var errorCode = `${result._errorType}${result.status}`;
 
-        if (result.status) {
-            message = `${message}\n(错误码:${result._errorType}${result.status})`;
-        }
-
-        return message;
+        return `${message}\n(错误码:${errorCode})`;
     }
 }
 

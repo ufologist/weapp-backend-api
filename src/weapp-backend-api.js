@@ -401,6 +401,24 @@ class WeappBackendApi extends BackendApi {
     /**
      * 接口调用失败时的默认处理方法
      * 
+     * 接口错误码规范
+     * -------------
+     * 根据发送请求的最终状态定义错误的分类
+     * - 发送失败(即请求根本就没有发送出去)
+     * - 发送成功
+     *   - HTTP 异常状态(例如 404/500...)
+     *   - HTTP 正常状态(例如 200)
+     *     - 接口调用成功
+     *     - 接口调用失败(业务错误, 即接口规范中 status 非 0 的情况)
+     * 
+     * 错误码可不固定长度, 整体格式为: 字母+数字
+     * 字母作为错误类型, 可扩展性更好, 数字建议划分区间来细分错误
+     * 例如:
+     * - A for API: API 调用失败(请求发送失败)的错误, 例如 A100 表示 URL 非法
+     * - H for HTTP, HTTP 异常状态的错误, 例如 H404 表示 HTTP 请求404错误
+     * - B for backend or business, 接口调用失败的错误, 例如 B100 业务A错误, B200 业务B错误
+     * - C for Client: 客户端错误, 例如 C100 表示解析 JSON 失败
+     * 
      * @param {object} requestOptions wx.request options
      * @param {object} requestResult wx.request success 或者 fail 返回的结果
      * @param {Promise}
@@ -411,17 +429,22 @@ class WeappBackendApi extends BackendApi {
         // 如果 wx.requet API 调用是成功的, 则一定会有 statusCode 字段
         if (typeof requestResult.statusCode != 'undefined') {
             result = {
-                status: WeappBackendApi.defaults.REQUEST_HTTP_FAIL_STATUS,
+                status: requestResult.statusCode,
+                _errorType: 'H',
                 statusInfo: {
                     message: WeappBackendApi.defaults.REQUEST_HTTP_FAIL_MESSAGE,
                     detail: {
-                        statusCode: requestResult.statusCode
+                        requestOptions: requestOptions,
+                        requestResult: requestResult
                     }
                 }
             };
         } else {
             result = {
+                // XXX 如何通过 errMsg 来生成不同的 status 值, 即方便一眼就能够知道出了什么错误
+                // 例如: errMsg 为 request:fail invalid url "a" 时, 我们认为是 1 的错误
                 status: WeappBackendApi.defaults.REQUEST_API_FAIL_STATUS,
+                _errorType: 'A',
                 statusInfo: {
                     message: WeappBackendApi.defaults.REQUEST_API_FAIL_MESSAGE,
                     detail: {
@@ -479,7 +502,7 @@ class WeappBackendApi extends BackendApi {
         // * 接口的参数
         // * 接口的返回状态
         // * 接口的返回数据
-        this.logger.warn('接口调用出错(' + requestResult.statusCode + ')', requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
+        this.logger.warn('接口调用出错(HTTP:' + requestResult.statusCode + ')', requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
         this.logger.warn('----------------------');
 
         this.failStatusHandler(requestOptions, requestResult);
@@ -542,8 +565,12 @@ class WeappBackendApi extends BackendApi {
         var result = requestResult.data;
         var message = result.statusInfo ? result.statusInfo.message : WeappBackendApi.defaults.FAIL_MESSAGE;
 
+        if (!result._errorType) {
+            result._errorType = 'B';
+        }
+
         if (result.status) {
-            message = message + '\n' + '(错误码:' + result.status + ')';
+            message = `${message}\n(错误码:${result._errorType}${result.status})`;
         }
 
         return message;
@@ -556,11 +583,10 @@ WeappBackendApi.defaults = {
     FAIL_MESSAGE: '系统繁忙',
 
     // 接口请求失败(HTTP协议层面)时的状态码, 用于与业务状态码区分开
-    REQUEST_HTTP_FAIL_STATUS: 10000,
     REQUEST_HTTP_FAIL_MESSAGE: '请求超时，请重试',
 
     // wx.request API 调用失败
-    REQUEST_API_FAIL_STATUS: 20000,
+    REQUEST_API_FAIL_STATUS: 1,
     REQUEST_API_FAIL_MESSAGE: '请求失败，请重试',
 
     // 默认的请求参数

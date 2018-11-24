@@ -10,6 +10,7 @@ import SimpleStorage from 'weapp-simple-storage';
  * - 集中配置接口
  * - 统一发送请求
  * - 统一处理请求的返回
+ * - 统一适配请求返回的数据格式
  * - 统一异常处理
  * - 预留扩展点
  * 
@@ -233,7 +234,7 @@ class WeappBackendApi extends BackendApi {
     afterSend(requestOptions, requestResult) {
         this._removeFromSending(requestOptions);
 
-        if (!this._isAnySending()) {
+        if (!this._isAnySending(true)) {
             this._hideLoading(requestOptions);
         }
     }
@@ -387,10 +388,24 @@ class WeappBackendApi extends BackendApi {
     /**
      * 是不是有正在发送中的请求
      * 
+     * @param {boolean} excludeNoLoading 排除队列中没有开启 loading 的请求, 即 `_showLoading` 参数为 false 的请求
      * @return {boolean}
      */
-    _isAnySending() {
-        return Object.keys(this.sending).length !== 0;
+    _isAnySending(excludeNoLoading) {
+        var sendingCount = 0;
+
+        if (excludeNoLoading) {
+            for (var key in this.sending) {
+                var requestOptions = this.sending[key];
+                if (requestOptions._showLoading !== false) {
+                    sendingCount += 1;
+                }
+            }
+        } else {
+            sendingCount = Object.keys(this.sending).length;
+        }
+
+        return sendingCount !== 0;
     }
 
     /**

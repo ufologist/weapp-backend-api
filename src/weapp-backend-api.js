@@ -477,13 +477,23 @@ class WeappBackendApi extends BackendApi {
                 }
             };
         } else {
+            var message = WeappBackendApi.defaults.REQUEST_API_FAIL_MESSAGE;
+            var status = WeappBackendApi.defaults.REQUEST_API_FAIL_STATUS;
+
+            if (requestResult.errMsg) {
+                // 通过 errMsg 来生成不同的 status 值, 即方便一眼就能够知道出了什么错误
+                var errMsgDetail = requestResult.errMsg.replace('request:fail ', '');
+                if (errMsgDetail) {
+                    message = errMsgDetail;
+                    status = errMsgDetail.charCodeAt(0);
+                }
+            }
+
             result = {
-                // XXX 如何通过 errMsg 来生成不同的 status 值, 即方便一眼就能够知道出了什么错误
-                // 例如: errMsg 为 request:fail invalid url "a" 时, 我们认为是 1 的错误
-                status: WeappBackendApi.defaults.REQUEST_API_FAIL_STATUS,
+                status: status,
                 _errorType: 'A',
                 statusInfo: {
-                    message: WeappBackendApi.defaults.REQUEST_API_FAIL_MESSAGE,
+                    message: message,
                     detail: {
                         errMsg: requestResult.errMsg
                     }

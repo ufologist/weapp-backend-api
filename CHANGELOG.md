@@ -1,5 +1,9 @@
 # CHANGELOG
 
+* v0.0.7 2018-11-26
+
+  * 小程序发送请求的 API (`wx.request`)调用失败时, 通过 `errMsg` 来生成不同的 `status` 值和 `message` 消息, 方便一眼就能够知道出了什么错误
+
 * v0.0.6 2018-11-24
 
   * `_isAnySending` 添加 `excludeNoLoading` 参数, 用于排除队列中没有开启 loading 的请求, 即 `_showLoading` 参数为 false 的请求, 这样才能确保没有开启 loading 的请求在发送时, 其他请求能够顺利的关掉他们开启的 loading

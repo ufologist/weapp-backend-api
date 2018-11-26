@@ -562,7 +562,8 @@ class WeappBackendApi extends BackendApi {
         // * 接口的参数
         // * 接口的返回状态
         // * 接口的返回数据
-        this.logger.warn('接口调用出错(HTTP:' + requestResult.statusCode + ')', requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
+        var errMsg = requestResult.statusCode ? `HTTP:${requestResult.statusCode}` : requestResult.errMsg;
+        this.logger.warn(`接口调用出错(${errMsg})`, requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
         this.logger.warn('----------------------');
 
         this.failStatusHandler(requestOptions, requestResult);

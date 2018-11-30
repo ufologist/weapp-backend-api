@@ -472,7 +472,7 @@ class WeappBackendApi extends BackendApi {
                     message: WeappBackendApi.defaults.REQUEST_HTTP_FAIL_MESSAGE,
                     detail: {
                         requestOptions: requestOptions,
-                        requestResult: requestResult
+                        requestResult: requestResult.statusCode
                     }
                 }
             };

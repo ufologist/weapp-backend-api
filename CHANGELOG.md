@@ -1,5 +1,11 @@
 # CHANGELOG
 
+* v0.0.8 2018-12-6
+
+  * 只在请求成功时做一次 `_normalizeRequestResult` 来标准化接口的返回数据
+  * **删除 `getRequestResult` 方法**, 因为标准化接口的返回数据后就没有必要了
+  * **修改 `ifApiSuccess` 为私有方法 `_ifApiSuccess`**, 因为标准化接口的返回数据后就没有必要了
+
 * v0.0.7 2018-11-26
 
   * 小程序发送请求的 API (`wx.request`)调用失败时, 通过 `errMsg` 来生成不同的 `status` 值和 `message` 消息, 方便一眼就能够知道出了什么错误

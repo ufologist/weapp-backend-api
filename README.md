@@ -23,7 +23,6 @@
   - `beforeSend(requestOptions)` 发送请求前的统一处理, 如果返回一个 Promise 可以阻止发送请求
   - `afterSend(requestOptions, requestResult)` 请求结束后的统一处理
   - `normalizeRequestResult(requestOptions, requestResult)` 标准化接口返回的数据格式, 方便适配各种接口返回数据格式不同的情况
-  - `ifApiSuccess(requestOptions, requestResult)` 判断接口请求调用是否成功
   - `getFailTipMessage(requestOptions, requestResult)` 获取给用户的错误提示
   - `failStatusHandler(requestOptions, requestResult)` 对错误状态的处理
   - `commonFailStatusHandler(requestOptions, requestResult)` 当接口处理失败时通用的错误状态处理
@@ -122,12 +121,11 @@ backendApi.sendRequest('getUser/1', {
     * `_addToSending`
     * `afterSend`
       * `_successHandler`
-        * `ifApiSuccess`
-        * `getRequestResult`
-          * `_getNormalizeRequestResult`
-            * `normalizeRequestResult`
-        * `commonFailStatusHandler`
-          * `failStatusHandler`
-          * `commonFailTip`
-            * `getFailTipMessage`
+        * `_normalizeRequestResult`
+          * `normalizeRequestResult`
+        * `_ifApiSuccess`
+          * `commonFailStatusHandler`
+            * `failStatusHandler`
+            * `commonFailTip`
+              * `getFailTipMessage`
       * `_failHandler`

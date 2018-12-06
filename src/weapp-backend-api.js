@@ -432,7 +432,11 @@ class WeappBackendApi extends BackendApi {
                 }
             }
 
-            return [requestResult.data, requestResult];
+            return [
+                // 只返回标准接口数据格式中的数据
+                requestResult.data ? requestResult.data.data : requestResult.data,
+                requestResult
+            ];
         } else { // 业务错误
             return this.commonFailStatusHandler(requestOptions, requestResult);
         }
@@ -531,8 +535,8 @@ class WeappBackendApi extends BackendApi {
         var _normalizeRequestResult = requestOptions._normalizeRequestResult ?
                                       requestOptions._normalizeRequestResult : this.normalizeRequestResult;
 
-        var data = _normalizeRequestResult.apply(this, [requestOptions, requestResult.data]);
-        requestResult.data = data;
+        var result = _normalizeRequestResult.apply(this, [requestOptions, requestResult.data]);
+        requestResult.data = result;
     }
 
     /**
@@ -573,7 +577,7 @@ class WeappBackendApi extends BackendApi {
         // 子类具体去实现
         // 例如
         // var result = requestResult.data;
-        // if (result.status === WeappBackendApi.defaults.REQUEST_HTTP_FAIL_STATUS) {
+        // if (result.status === WeappBackendApi.defaults.REQUEST_API_FAIL_STATUS) {
         //     // XXX your code here
         // } else if (result.status == 401) {
         //     // XXX your code here

@@ -137,19 +137,20 @@ class BackendApi {
     /**
      * 标准化接口返回的数据格式, 方便适配各种接口返回数据格式不同的情况
      * 
-     * 例如标准格式为:
+     * 标准格式为:
      * {
-     *     "status": 0,
      *     "data": {},
+     *     "status": 0,
      *     "statusInfo": {
-     *         "message": "foo",
-     *         "detail": "bar"
+     *         "message": "给用户的提示信息",
+     *         "detail": "用于排查错误的详细错误信息"
      *     }
      * }
      * 
      * @param {any} requestOptions
      * @param {any} requestResult
      * @return {any}
+     * @see https://github.com/f2e-journey/treasure/blob/master/api.md#%E6%8E%A5%E5%8F%A3%E8%BF%94%E5%9B%9E%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84
      */
     normalizeRequestResult(requestOptions, requestResult) {
         return requestResult;
@@ -416,7 +417,9 @@ class WeappBackendApi extends BackendApi {
      * @return {object|Promise}
      */
     _successHandler(requestOptions, requestResult) {
-        if (this.ifApiSuccess(requestOptions, requestResult)) {
+        this._normalizeRequestResult(requestOptions, requestResult);
+
+        if (this._ifApiSuccess(requestOptions, requestResult)) {
             this.logger.log(requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
             this.logger.log('----------------------');
 
@@ -429,7 +432,7 @@ class WeappBackendApi extends BackendApi {
                 }
             }
 
-            return [this.getRequestResult(requestOptions, requestResult), requestResult];
+            return [requestResult.data, requestResult];
         } else { // 业务错误
             return this.commonFailStatusHandler(requestOptions, requestResult);
         }
@@ -512,36 +515,24 @@ class WeappBackendApi extends BackendApi {
      * @param {object} requestResult wx.request success 返回的结果
      * @return {boolean}
      */
-    ifApiSuccess(requestOptions, requestResult) {
+    _ifApiSuccess(requestOptions, requestResult) {
         // 接口返回的数据
-        var result = this._getNormalizeRequestResult(requestOptions, requestResult);
+        var result = requestResult.data;
         return !result.status || result.status === 0;
     }
 
     /**
-     * 获取标准化的接口返回数据
+     * 标准化的接口返回数据, 会改写 `requestResult.data` 的内容
      * 
      * @param {object} requestOptions 
      * @param {object} requestResult 
-     * @return {object}
      */
-    _getNormalizeRequestResult(requestOptions, requestResult) {
+    _normalizeRequestResult(requestOptions, requestResult) {
         var _normalizeRequestResult = requestOptions._normalizeRequestResult ?
                                       requestOptions._normalizeRequestResult : this.normalizeRequestResult;
 
-        return _normalizeRequestResult.apply(this, [requestOptions, requestResult.data]);
-    }
-
-    /**
-     * 提取出接口返回的数据
-     * 
-     * @param {object} requestOptions wx.request options
-     * @param {object} requestResult wx.request success 返回的结果
-     * @return {object}
-     */
-    getRequestResult(requestOptions, requestResult) {
-        var result = this._getNormalizeRequestResult(requestOptions, requestResult);
-        return result.data;
+        var data = _normalizeRequestResult.apply(this, [requestOptions, requestResult.data]);
+        requestResult.data = data;
     }
 
     /**
@@ -623,7 +614,7 @@ class WeappBackendApi extends BackendApi {
      * @return {string}
      */
     getFailTipMessage(requestOptions, requestResult) {
-        var result = this._getNormalizeRequestResult(requestOptions, requestResult);
+        var result = requestResult.data;
 
         var message = result.statusInfo && result.statusInfo.message ?
                       result.statusInfo.message : WeappBackendApi.defaults.FAIL_MESSAGE;

@@ -552,11 +552,11 @@ class WeappBackendApi extends BackendApi {
      */
     commonFailStatusHandler(requestOptions, requestResult) {
         // 接口调用失败, 输出失败的日志信息, 需要包含如下重要信息
-        // * HTTP method
-        // * HTTP URL
-        // * 接口的参数
-        // * 接口的返回状态
-        // * 接口的返回数据
+        // - HTTP method
+        // - HTTP URL
+        // - 接口的参数
+        // - 接口的返回状态
+        // - 接口的返回数据
         var errMsg = requestResult.statusCode ? `HTTP:${requestResult.statusCode}` : requestResult.errMsg;
         this.logger.warn(`接口调用出错(${errMsg})`, requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
         this.logger.warn('----------------------');

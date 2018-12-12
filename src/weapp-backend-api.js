@@ -24,6 +24,7 @@ class BackendApi {
      * @param {object} apiConfig 后端 HTTP 接口的配置, 将 HTTP 接口的调用视为一次远程调用(RPC)
      *        配置项是接口名称和请求参数的映射
      *        例如
+     *        ```javascript
      *        {
      *            'getList': {
      *                method: 'GET',
@@ -34,6 +35,7 @@ class BackendApi {
      *                url: 'https://domain.com/detail'
      *            }
      *        }
+     *        ```
      * @param {object} defaultRequestOptions 默认的请求参数
      * @param {number} loggerLevel 日志级别, 默认为 Logger.LEVEL_WARN 级别
      *                 TODO: 如果微信小程序支持获取当前运行的版本(开发版/体验版/线上版),
@@ -138,6 +140,7 @@ class BackendApi {
      * 标准化接口返回的数据格式, 方便适配各种接口返回数据格式不同的情况
      * 
      * 标准格式为:
+     * ```javascript
      * {
      *     "data": {},
      *     "status": 0,
@@ -146,6 +149,7 @@ class BackendApi {
      *         "detail": "用于排查错误的详细错误信息"
      *     }
      * }
+     * ```
      * 
      * @param {any} requestOptions
      * @param {any} requestResult
@@ -161,6 +165,7 @@ class BackendApi {
  * 统一封装微信小程序平台后端接口的调用
  * 
  * @example
+ * ```javascript
  * import BackendApi from 'weapp-backend-api';
  * 
  * var backendApi = new BackendApi({
@@ -174,6 +179,7 @@ class BackendApi {
  * }, function(requestResult) {
  *     console.log(requestResult);
  * });
+ * ```
  */
 class WeappBackendApi extends BackendApi {
     constructor(apiConfig, defaultRequestOptions = WeappBackendApi.defaults.requestOptions, loggerLevel) {
@@ -423,8 +429,8 @@ class WeappBackendApi extends BackendApi {
             this.logger.log(requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
             this.logger.log('----------------------');
 
-            var requestInfoHash = this._getRequestInfoHash(requestOptions);
             if (requestOptions._cacheTtl >= 0) {
+                var requestInfoHash = this._getRequestInfoHash(requestOptions);
                 if (!this.simpleStorage.has(requestInfoHash)) {
                     this.simpleStorage.set(requestInfoHash, requestResult, {
                         ttl: requestOptions._cacheTtl
@@ -526,7 +532,7 @@ class WeappBackendApi extends BackendApi {
     }
 
     /**
-     * 标准化的接口返回数据, 会改写 `requestResult.data` 的内容
+     * 标准化接口的返回数据, 会改写 `requestResult.data` 的内容
      * 
      * @param {object} requestOptions 
      * @param {object} requestResult 

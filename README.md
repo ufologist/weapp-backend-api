@@ -23,10 +23,10 @@
   - `beforeSend(requestOptions)` 发送请求前的统一处理, 如果返回一个 Promise 可以阻止发送请求
   - `afterSend(requestOptions, requestResult)` 请求结束后的统一处理
   - `normalizeRequestResult(requestOptions, requestResult)` 标准化接口返回的数据格式, 方便适配各种接口返回数据格式不同的情况
-  - `getFailTipMessage(requestOptions, requestResult)` 获取给用户的错误提示
-  - `failStatusHandler(requestOptions, requestResult)` 对错误状态的处理
+  - `failStatusHandler(requestOptions, requestResult)` 针对错误状态做自定义处理
   - `commonFailStatusHandler(requestOptions, requestResult)` 当接口处理失败时通用的错误状态处理
   - `commonFailTip(requestOptions, requestResult)` 接口出错时统一弹出错误提示信息
+  - `getFailTipMessage(requestOptions, requestResult)` 获取给用户的错误提示
 
 ## 调用后端接口的统一流程
 
@@ -65,7 +65,7 @@
 npm install weapp-backend-api --save
 ```
 
-## 使用
+## 使用 [APIDoc](https://doc.esdoc.org/github.com/ufologist/weapp-backend-api/)
 
 ```javascript
 import BackendApi from 'weapp-backend-api';

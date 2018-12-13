@@ -586,7 +586,7 @@ class WeappBackendApi extends BackendApi {
     }
 
     /**
-     * 对错误状态的处理
+     * 针对错误状态做自定义处理
      * 
      * @abstract
      * @param {object} requestOptions wx.request options

@@ -112,20 +112,28 @@ backendApi.sendRequest('getUser/1', {
 
 ## 核心逻辑流程
 
-* `new BackendApi()`
-* `sendRequest`
-  * `_getRequestOptions`
-  * `$sendHttpRequest`
-    * `beforeSend`
-    * 发送请求
-    * `_addToSending`
-    * `afterSend`
-      * `_successHandler`
-        * `_normalizeRequestResult`
-          * `normalizeRequestResult`
-        * `_ifApiSuccess`
-          * `commonFailStatusHandler`
-            * `failStatusHandler`
-            * `commonFailTip`
-              * `getFailTipMessage`
-      * `_failHandler`
+* 配置接口 - `new BackendApi(apiConfig)`
+* 发送请求 - `sendRequest`
+  * 获取调用接口的配置 - `_getRequestOptions`
+  * 发送 HTTP 请求 - `$sendHttpRequest`
+    * 发送请求前的统一处理 - `beforeSend`
+      * 拦截重复请求 - `_interceptDuplicateRequest`
+      * 获取接口缓存 - `cachedRequestResult`
+      * 显示 loading 提示 - `_showLoading`
+    * 发出请求 - `wx.request`
+    * 将请求放入到发送中的队列 - `_addToSending`
+    * 判断 HTTP 请求是否成功 - `statusCode`
+    * 请求结束后的统一处理 - `afterSend`
+      * 将请求从发送中的队列中移除 - `_removeFromSending`
+      * 关闭 loading 提示 - `_hideLoading`
+    * 请求成功 - `_successHandler`
+      * 标准化接口的返回数据 - `_normalizeRequestResult` -> `normalizeRequestResult`
+      * 判断接口调用是否成功 - `_ifApiSuccess`
+        * 成功: 将请求结果写入缓存 - `_cacheTtl`
+        * 失败: 通用的错误处理 - `commonFailStatusHandler`
+    * 请求失败 - `_failHandler`
+      * 标准化请求失败的数据并规范错误码
+      * 通用的错误处理 - `commonFailStatusHandler`
+        * 输出错误日志
+        * 针对错误状态做自定义处理 - `failStatusHandler`
+        * 抛出错误提示给用户 - `commonFailTip` <- `getFailTipMessage`

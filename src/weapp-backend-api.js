@@ -297,9 +297,9 @@ class WeappBackendApi extends BackendApi {
                 // requestResult 包含的属性有: statusCode, header, data, errMsg
                 requestOptions.success = function(requestResult) {
                     // Determine if HTTP request successful | jQuery
-                    var isSuccess = requestResult.statusCode >= 200 && requestResult.statusCode < 300 || requestResult.statusCode === 304;
+                    var isHttpRequestSuccess = requestResult.statusCode >= 200 && requestResult.statusCode < 300 || requestResult.statusCode === 304;
 
-                    if (isSuccess) {
+                    if (isHttpRequestSuccess) {
                         resolve(requestResult);
                     } else { // HTTP 请求失败
                         reject(requestResult);
@@ -313,7 +313,9 @@ class WeappBackendApi extends BackendApi {
                     reject(requestResult);
                 };
 
+                // 发出请求
                 wx.request(requestOptions);
+
                 this._addToSending(requestOptions);
             });
         }
@@ -424,9 +426,11 @@ class WeappBackendApi extends BackendApi {
      */
     _successHandler(requestOptions, requestResult) {
         this._normalizeRequestResult(requestOptions, requestResult);
+        var result = requestResult.data;
 
         if (this._ifApiSuccess(requestOptions, requestResult)) {
-            this.logger.log(requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
+            this.logger.log(requestOptions.method, requestOptions.url, requestOptions.data,
+                            requestOptions, requestResult);
             this.logger.log('----------------------');
 
             if (requestOptions._cacheTtl >= 0) {
@@ -440,10 +444,14 @@ class WeappBackendApi extends BackendApi {
 
             return [
                 // 只返回标准接口数据格式中的数据
-                requestResult.data ? requestResult.data.data : requestResult.data,
+                result ? result.data : result,
                 requestResult
             ];
         } else { // 业务错误
+            if (!result) {
+                requestResult.data = result = {};
+            }
+            result._errorType = 'B';
             return this.commonFailStatusHandler(requestOptions, requestResult);
         }
     }
@@ -528,7 +536,11 @@ class WeappBackendApi extends BackendApi {
     _ifApiSuccess(requestOptions, requestResult) {
         // 接口返回的数据
         var result = requestResult.data;
-        return !result.status || result.status === 0;
+        var isApiSuccess = false;
+        if (result) {
+            isApiSuccess = !result.status || result.status == 0;
+        }
+        return isApiSuccess;
     }
 
     /**
@@ -563,8 +575,9 @@ class WeappBackendApi extends BackendApi {
         // - 接口的参数
         // - 接口的返回状态
         // - 接口的返回数据
-        var errMsg = requestResult.statusCode ? `HTTP:${requestResult.statusCode}` : requestResult.errMsg;
-        this.logger.warn(`接口调用出错(${errMsg})`, requestOptions.method, requestOptions.url, requestOptions.data, requestOptions, requestResult);
+        this.logger.warn(`接口调用出错(${this._getErrorCode(requestResult.data)})`,
+                         requestOptions.method, requestOptions.url, requestOptions.data,
+                         requestOptions, requestResult);
         this.logger.warn('----------------------');
 
         this.failStatusHandler(requestOptions, requestResult);
@@ -585,7 +598,7 @@ class WeappBackendApi extends BackendApi {
         // var result = requestResult.data;
         // if (result.status === WeappBackendApi.defaults.REQUEST_API_FAIL_STATUS) {
         //     // XXX your code here
-        // } else if (result.status == 401) {
+        // } else if (result.status == 401) { // 例如用户未登录统一跳转到登录页
         //     // XXX your code here
         // }
     }
@@ -597,21 +610,35 @@ class WeappBackendApi extends BackendApi {
      * @param {object} requestResult wx.request success 或者 fail 返回的结果
      */
     commonFailTip(requestOptions, requestResult) {
-        var message = this.getFailTipMessage(requestOptions, requestResult)
         // 在一些场景下需要, 例如提示用户登录的时候, 不希望看见一个错误提示, 或者想自定义错误提示的时候
         if (requestOptions._showFailTip !== false) {
+            var message = this.getFailTipMessage(requestOptions, requestResult);
+
             // XXX 由于 wx.showLoading 底层就是调用的 showToast,
             // toast 实现是单例, 全局只有一个, 因此使用 showToast 会造成 loading 被关掉
             var toastOptions = {
                 icon: 'none',
                 title: message
             };
-            if (typeof requestOptions._showFailTipDuration != 'undefined') {
+
+            if (typeof requestOptions._showFailTipDuration !== 'undefined') {
                 toastOptions.duration = requestOptions._showFailTipDuration;
             }
+
             wx.showToast(toastOptions);
         }
     }
+
+    /**
+     * 获取错误码
+     * 
+     * @param {object} 标准的接口数据
+     * @return {string}
+     */
+    _getErrorCode(result) {
+        return `${result._errorType}${result.status ? result.status : ''}`;
+    }
+
     /**
      * 获取给用户的错误提示
      * 
@@ -626,15 +653,10 @@ class WeappBackendApi extends BackendApi {
     getFailTipMessage(requestOptions, requestResult) {
         var result = requestResult.data;
 
-        var message = result.statusInfo && result.statusInfo.message ?
+        var message = (result.statusInfo && result.statusInfo.message) ?
                       result.statusInfo.message : WeappBackendApi.defaults.FAIL_MESSAGE;
 
-        if (!result._errorType) {
-            result._errorType = 'B';
-        }
-        var errorCode = `${result._errorType}${result.status}`;
-
-        return `${message}\n(错误码:${errorCode})`;
+        return `${message}\n(错误码:${this._getErrorCode(result)})`;
     }
 }
 

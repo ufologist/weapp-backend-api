@@ -9,6 +9,8 @@
 [changelog-image]: https://img.shields.io/badge/CHANGE-LOG-blue.svg?style=flat-square
 [changelog-url]: https://github.com/ufologist/weapp-backend-api/blob/master/CHANGELOG.md
 
+[![npm-image](https://nodei.co/npm/weapp-backend-api.png?downloads=true&downloadRank=true&stars=true)](https://npmjs.com/package/weapp-backend-api)
+
 统一封装微信小程序平台后端接口的调用
 
 - 集中配置接口

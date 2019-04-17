@@ -113,10 +113,15 @@ class BackendApi {
             var urlAppend = '';
 
             // 针对接口 URL 中有 path 参数的情况, 例如: //domain.com/user/123
-            // 需要在 name 中加入斜杠来标识, 例如: getUser/123
-            // 配置映射的 URL 为: //domain.com/user, 会动态的将 name 后面的 path 参数拼接到此 URL 中
+            // 需要在传入的 name 中加入斜杠来标识, 例如传入的 name 为: getUser/123
+            // getUser 接口的配置与一般的配置一样
+            // 'getUser': {
+            //     url: '//domain.com/user'
+            // }
+            // 会先根据斜杠提取出注册在接口配置中的名字: getUser,
+            // 再取出 getUser 注册时的 URL, 将斜杠之后的 path 拼接到此 URL 中
             // TODO 考虑支持这种格式: //domain.com/user/:userId/room/:roomId
-            var slashIndex = name.indexOf('/');
+            var slashIndex = name.lastIndexOf('/');
             if (slashIndex != -1) {
                 _name = name.substring(0, slashIndex);
                 urlAppend = name.substring(slashIndex);

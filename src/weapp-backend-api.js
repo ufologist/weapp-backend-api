@@ -268,14 +268,14 @@ class WeappBackendApi extends BackendApi {
      * 发送 HTTP 请求
      * 
      * @override
-     * @param {object} requestOptions wx.requesst options
-     *                 requestOptions._showLoading {boolean} 是否显示 loading 提示
-     *                 requestOptions._showLoadingMask {boolean} 是否显示 loading 提示的 mask
-     *                 requestOptions._interceptDuplicateRequest {boolean} 是否拦截重复请求
-     *                 requestOptions._showFailTip {boolean} 接口调用出错时是否给用户提示错误消息
-     *                 requestOptions._showFailTipDuration {number} 接口调用出错时错误信息的显示多长时间(ms)
-     *                 requestOptions._cacheTtl {number} 缓存的存活时间(ms)
-     *                 requestOptions._normalizeRequestResult {function} 标准化接口返回的数据格式
+     * @param {object} [requestOptions] 扩展了 wx.requesst 的 options
+     * @param {boolean} [requestOptions._showLoading=true] 是否显示 loading 提示
+     * @param {boolean} [requestOptions._showLoadingMask=false] 是否显示 loading 提示的 mask
+     * @param {boolean} [requestOptions._interceptDuplicateRequest=false] 是否拦截重复请求
+     * @param {boolean} [requestOptions._showFailTip=true] 接口调用出错时是否给用户提示错误消息
+     * @param {number} [requestOptions._showFailTipDuration] 接口调用出错时错误信息的显示多长时间(ms)
+     * @param {number} [requestOptions._cacheTtl] 缓存的存活时间(ms)
+     * @param {Function} [requestOptions._normalizeRequestResult] 标准化接口返回的数据格式
      */
     $sendHttpRequest(requestOptions) {
         // 因为调用过 wx.request(requestOptions) 之后, 请求的 URL 会被微信小程序的 API 改写,

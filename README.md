@@ -14,7 +14,7 @@
 统一封装微信小程序平台后端接口的调用
 
 - 集中配置接口
-- 统一发送请求
+- 统一发送请求(`request` 和 `uploadFile`)
 - 统一处理请求的返回
 - 统一适配请求返回的数据格式
 - 统一异常处理
@@ -118,7 +118,6 @@ backendApi.sendRequest('uploadPhoto', {
 
 ## 实现的自定义请求参数(options)
 
-* `_type` 请求的类型, 默认通过 `request` 发送请求, 如果是上传文件, 请设置为 `uploadFile`
 * `_showLoading` 默认发送请求时会显示一个正在加载中的提示
 * `_showLoadingMask` 默认发送请求时不开启加载中的蒙层
 * `_showFailTip` 默认请求失败时会给用户提示错误消息
@@ -126,6 +125,7 @@ backendApi.sendRequest('uploadPhoto', {
 * `_interceptDuplicateRequest` 是否拦截重复请求, 默认不拦截重复请求
 * `_cacheTtl` 缓存接口返回的数据, 设置缓存数据的存活时长(ms)
 * `_normalizeRequestResult` 适配单个接口返回的数据以符合[标准的接口数据格式](https://github.com/f2e-journey/treasure/blob/master/api.md#%E6%8E%A5%E5%8F%A3%E8%BF%94%E5%9B%9E%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84)
+* `_type` 请求的类型, 默认通过 `request` 来发送请求, 如果是上传文件, 请设置为 `uploadFile`
 
 ## 核心逻辑流程
 

@@ -81,6 +81,10 @@ var backendApi = new BackendApi({
     'getUser': { // RESTful
         method: 'GET',
         url: 'https://domain.com/user'
+    },
+    'uploadPhoto': { // wx.uploadFile
+        _type: 'uploadFile',
+        url: 'https://domain.com/photo/upload'
     }
 }, undefined, Logger.LEVEL_WARN);
 
@@ -95,6 +99,16 @@ backendApi.sendRequest('getList', {
 // 支持 RESTful 风格
 backendApi.sendRequest('getUser/1', {
     // wx.request options
+}).then(function([data]) {
+    console.log(data);
+}, function(requestResult) {
+    console.log(requestResult);
+});
+
+// 支持上传文件
+backendApi.sendRequest('uploadPhoto', {
+    filePath: '', // 例如通过 wx.chooseImage 拿到的文件路径
+    name: 'file'
 }).then(function([data]) {
     console.log(data);
 }, function(requestResult) {

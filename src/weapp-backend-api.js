@@ -651,7 +651,7 @@ class WeappBackendApi extends BackendApi {
     /**
      * 获取错误码
      * 
-     * @param {object} 标准的接口数据
+     * @param {object} result 标准的接口数据
      * @return {string}
      */
     _getErrorCode(result) {

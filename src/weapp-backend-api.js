@@ -54,6 +54,35 @@ class BackendApi {
     }
 
     /**
+     * 添加一组后端 HTTP 接口的配置
+     * 
+     * @param {string} [namespace] 给接口名添加 namespace, 例如: 给 'getUser' 添加 'user' 的 namespace, 接口名会变为 'user.getUser'
+     * @param {object} apiConfig
+     * @return {BackendApi} this
+     */
+    addApiConfig(namespace, apiConfig) {
+        var _apiConfig;
+        if (namespace) {
+            _apiConfig = {};
+            for (var name in apiConfig) {
+                _apiConfig[namespace + '.' + name] = apiConfig[name];
+            }
+        } else {
+            _apiConfig = apiConfig;
+        }
+
+        // 可能存在覆盖接口配置的情况
+        for (var name in _apiConfig) {
+            if (this.apiConfig[name]) {
+                this.logger.warn('覆盖了接口的配置', name, _apiConfig[name], this.apiConfig[name]);
+            }
+        }
+
+        extend(this.apiConfig, _apiConfig);
+        return this;
+    }
+
+    /**
      * 发送请求前的统一处理
      * 
      * @abstract
@@ -74,11 +103,12 @@ class BackendApi {
      * 统一发送(接口)请求的方法
      * 
      * @param {string} name 接口的名称
-     * @param {object} options 请求参数
+     * @param {object} [options={}] 请求参数
+     * @param {string} [namespace=''] 接口名的 namespace
      * @return {Promise}
      */
-    sendRequest(name, options) {
-        var requestOptions = this._getRequestOptions(name, options);
+    sendRequest(name, options = {}, namespace = '') {
+        var requestOptions = this._getRequestOptions(name, options, namespace);
         return this.$sendHttpRequest(requestOptions);
     }
 
@@ -103,9 +133,10 @@ class BackendApi {
      *                      针对接口 URL 中有 path 参数的情况, 需要在 name 中加入斜杠来标识,
      *                      如果不使用这个参数, 也可以发请求, 但不推荐这么使用, 应该将所有接口都配置好
      * @param {object} options 请求参数
+     * @param {string} namespace 接口名的 namespace
      * @return {object}
      */
-    _getRequestOptions(name, options = {}) {
+    _getRequestOptions(name, options, namespace) {
         var api;
 
         if (name) {
@@ -121,12 +152,15 @@ class BackendApi {
             // 会先根据斜杠提取出注册在接口配置中的名字: getUser,
             // 再取出 getUser 注册时的 URL, 将斜杠之后的 path 拼接到此 URL 中
             // TODO 考虑支持这种格式: //domain.com/user/:userId/room/:roomId
-            var slashIndex = name.lastIndexOf('/');
+            var slashIndex = name.indexOf('/');
             if (slashIndex != -1) {
                 _name = name.substring(0, slashIndex);
                 urlAppend = name.substring(slashIndex);
             }
 
+            if (namespace) {
+                _name = namespace + '.' + _name;
+            }
             var _api = this.apiConfig[_name];
             if (_api) {
                 api = extend(true, {}, _api);

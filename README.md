@@ -19,7 +19,7 @@
 - 统一适配请求返回的数据格式
 - 统一异常处理
 - Promise 风格
-  - `sendRequest(name, options).then`
+  - `sendRequest(name, options, namespace).then`
 - 支持日志级别参数, 用于在调试阶段输出每个请求的信息
 - 预留扩展点(继承覆盖的方式)
   - `beforeSend(requestOptions)` 发送请求前的统一处理, 如果返回一个 Promise 可以阻止发送请求
@@ -109,6 +109,29 @@ backendApi.sendRequest('getUser/1', {
 backendApi.sendRequest('uploadPhoto', {
     filePath: '', // 例如通过 wx.chooseImage 拿到的文件路径
     name: 'file'
+}).then(function([data]) {
+    console.log(data);
+}, function(requestResult) {
+    console.log(requestResult);
+});
+
+// 支持 namespace 机制, 便于拆分接口配置
+backendApi.addApiConfig('user', {
+    getInfo: {
+        url: 'https://domain.com/user/info'
+    }
+});
+// 显式指定 namespace
+backendApi.sendRequest('getInfo', {
+    // wx.request options
+}, 'user').then(function([data]) {
+    console.log(data);
+}, function(requestResult) {
+    console.log(requestResult);
+});
+// 直接拼上 namespace 更简洁
+backendApi.sendRequest('user.getInfo', {
+    // wx.request options
 }).then(function([data]) {
     console.log(data);
 }, function(requestResult) {

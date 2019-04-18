@@ -1,5 +1,10 @@
 # CHANGELOG
 
+* v0.0.12 2019-4-18
+
+  * 增加 `addApiConfig` 方法, 通过 `namespace` 来添加一组接口配置, 这样就可以很方便地将接口配置拆分到成多个文件来维护, 也不用担心接口名冲突的问题
+  * 同时 `sendRequest` 方法也添加了 `namespace` 参数, 用于显式调用某个 `namespace` 的接口
+
 * v0.0.11 2019-4-18
 
   * 增加 `requestOptions._type` 选项, 用于发送上传文件(`uploadFile`)的请求

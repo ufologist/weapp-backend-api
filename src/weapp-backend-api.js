@@ -281,7 +281,7 @@ class WeappBackendApi extends BackendApi {
      * @param {number} [requestOptions._showFailTipDuration] 接口调用出错时错误信息的显示多长时间(ms)
      * @param {number} [requestOptions._cacheTtl] 缓存的存活时间(ms)
      * @param {Function} [requestOptions._normalizeRequestResult] 标准化接口返回的数据格式
-     * @param {Function} [requestOptions._type='request'] 请求的类型: `request` | `uploadFile`
+     * @param {string} [requestOptions._type='request'] 请求的类型: `request` | `uploadFile`
      */
     $sendHttpRequest(requestOptions) {
         // 因为调用过 wx.request(requestOptions) 之后, 请求的 URL 会被微信小程序的 API 改写,

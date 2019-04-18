@@ -281,6 +281,7 @@ class WeappBackendApi extends BackendApi {
      * @param {number} [requestOptions._showFailTipDuration] 接口调用出错时错误信息的显示多长时间(ms)
      * @param {number} [requestOptions._cacheTtl] 缓存的存活时间(ms)
      * @param {Function} [requestOptions._normalizeRequestResult] 标准化接口返回的数据格式
+     * @param {Function} [requestOptions._type='request'] 请求的类型: `request` | `uploadFile`
      */
     $sendHttpRequest(requestOptions) {
         // 因为调用过 wx.request(requestOptions) 之后, 请求的 URL 会被微信小程序的 API 改写,
@@ -319,7 +320,11 @@ class WeappBackendApi extends BackendApi {
                 };
 
                 // 发出请求
-                wx.request(requestOptions);
+                if (requestOptions._type === 'uploadFile') { // 上传文件
+                    wx.uploadFile(requestOptions);
+                } else { // 其他请求
+                    wx.request(requestOptions);
+                }
 
                 this._addToSending(requestOptions);
             });
@@ -557,6 +562,15 @@ class WeappBackendApi extends BackendApi {
     _normalizeRequestResult(requestOptions, requestResult) {
         var _normalizeRequestResult = requestOptions._normalizeRequestResult ?
                                       requestOptions._normalizeRequestResult : this.normalizeRequestResult;
+
+        // wx.uploadFile 返回的数据是 string 类型, 需要解析为对象
+        if (requestOptions._type === 'uploadFile') {
+            try {
+                requestResult.data = JSON.parse(requestResult.data);
+            } catch (error) {
+                this.logger.warn('解析 wx.uploadFile 返回的数据出错', requestOptions, requestResult);
+            }
+        }
 
         var result = _normalizeRequestResult.apply(this, [requestOptions, requestResult.data]);
         requestResult.data = result;

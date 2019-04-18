@@ -104,6 +104,7 @@ backendApi.sendRequest('getUser/1', {
 
 ## 实现的自定义请求参数(options)
 
+* `_type` 请求的类型, 默认通过 `request` 发送请求, 如果是上传文件, 请设置为 `uploadFile`
 * `_showLoading` 默认发送请求时会显示一个正在加载中的提示
 * `_showLoadingMask` 默认发送请求时不开启加载中的蒙层
 * `_showFailTip` 默认请求失败时会给用户提示错误消息

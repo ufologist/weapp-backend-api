@@ -1,6 +1,6 @@
 {
   "name": "weapp-backend-api",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "统一封装微信小程序平台后端接口的调用",
   "main": "src/weapp-backend-api.js",
   "scripts": {

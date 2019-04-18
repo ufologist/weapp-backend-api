@@ -1,5 +1,9 @@
 # CHANGELOG
 
+* v0.0.11 2019-4-18
+
+  * 增加 `requestOptions._type` 选项, 用于发送上传文件(`uploadFile`)的请求
+
 * v0.0.10 2018-12-13
 
   * 优化代码, 统一错误码提示

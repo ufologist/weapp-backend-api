@@ -150,9 +150,10 @@ backendApi.sendRequest('user.getInfo', {
 
 // 支持加载远程的接口配置, 之后的接口调用会在接口配置加载完成后才真正发送
 backendApi.loadApiConfig({
+    // wx.request options
     url: 'https://domain.com/api-config/abc123'
 });
-backendApi.sendRequest('getProject', {
+backendApi.sendRequest('getRemoteApiConfig', {
     // wx.request options
 }).then(function([data]) {
     console.log(data);

@@ -264,19 +264,40 @@ class Deferred {
             this._reject = reject;
         });
     }
+    /**
+     * @return {string}
+     * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise#Description
+     */
     state() {
         return this._state;
     }
+    /**
+     * @return {Promise}
+     */
     promise() {
         return this._promise;
     }
+    /**
+     * 
+     * @param {Function} onFulfilled 
+     * @param {Function} onRejected 
+     * @return {Promise}
+     */
     then(onFulfilled, onRejected) {
         return this._promise.then(onFulfilled, onRejected);
     }
+    /**
+     * 
+     * @param {*} value 
+     */
     resolve(value) {
         this._resolve(value);
         this._state = 'fulfilled';
     }
+    /**
+     * 
+     * @param {*} reason 
+     */
     reject(reason) {
         this._reject(reason);
         this._state = 'rejected';

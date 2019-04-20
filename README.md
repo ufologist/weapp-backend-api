@@ -88,8 +88,18 @@ var backendApi = new BackendApi({
     }
 }, undefined, Logger.LEVEL_WARN);
 
+// 调用配置好的接口
 backendApi.sendRequest('getList', {
     // wx.request options
+}).then(function([data]) {
+    console.log(data);
+}, function(requestResult) {
+    console.log(requestResult);
+});
+
+// 调用没有配置的接口
+backendApi.sendRequest('', {
+    url: 'https://domain.com/foobar'
 }).then(function([data]) {
     console.log(data);
 }, function(requestResult) {
@@ -131,6 +141,18 @@ backendApi.sendRequest('getInfo', {
 });
 // 直接拼上 namespace 更简洁
 backendApi.sendRequest('user.getInfo', {
+    // wx.request options
+}).then(function([data]) {
+    console.log(data);
+}, function(requestResult) {
+    console.log(requestResult);
+});
+
+// 支持加载远程的接口配置, 之后的接口调用会在接口配置加载完成后才真正发送
+backendApi.loadApiConfig({
+    url: 'https://domain.com/api-config/abc123'
+});
+backendApi.sendRequest('getProject', {
     // wx.request options
 }).then(function([data]) {
     console.log(data);

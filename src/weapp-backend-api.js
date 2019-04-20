@@ -44,8 +44,14 @@ class BackendApi {
     constructor(apiConfig = {}, defaultRequestOptions = {}, loggerLevel = Logger.LEVEL_WARN) {
         this.apiConfig = apiConfig;
         this.defaultRequestOptions = defaultRequestOptions;
+
         // 正在发送的请求
         this.sending = {};
+
+        // 是否在加载接口配置
+        this.loading = false;
+        // 等待发送的请求
+        this.stalled = [];
 
         this.logger = new Logger({
             level: loggerLevel,
@@ -56,19 +62,24 @@ class BackendApi {
     /**
      * 添加一组后端 HTTP 接口的配置
      * 
-     * @param {string} [namespace] 给接口名添加 namespace, 例如: 给 'getUser' 添加 'user' 的 namespace, 接口名会变为 'user.getUser'
+     * @param {string | object} [namespace] 给接口名添加 namespace, 例如: 给 'getUser' 添加 'user' 的 namespace, 接口名会变为 'user.getUser'; 如果参数为 object 类型, 则表示直接添加接口配置, 不设置 namespace
      * @param {object} apiConfig
      * @return {BackendApi} this
      */
     addApiConfig(namespace, apiConfig) {
         var _apiConfig;
-        if (namespace) {
-            _apiConfig = {};
-            for (var name in apiConfig) {
-                _apiConfig[namespace + '.' + name] = apiConfig[name];
-            }
+
+        if (arguments.length === 1) {
+            _apiConfig = namespace;
         } else {
-            _apiConfig = apiConfig;
+            if (namespace) {
+                _apiConfig = {};
+                for (var name in apiConfig) {
+                    _apiConfig[namespace + '.' + name] = apiConfig[name];
+                }
+            } else {
+                _apiConfig = apiConfig;
+            }
         }
 
         // 可能存在覆盖接口配置的情况
@@ -108,8 +119,44 @@ class BackendApi {
      * @return {Promise}
      */
     sendRequest(name, options = {}, namespace = '') {
-        var requestOptions = this._getRequestOptions(name, options, namespace);
-        return this.$sendHttpRequest(requestOptions);
+        // 如果还在加载接口配置, 则延迟执行接口的请求
+        if (this.loading) {
+            var dfd = new Deferred();
+            this.stalled.push(dfd);
+
+            return dfd.then(() => {
+                var requestOptions = this._getRequestOptions(name, options, namespace);
+                return this.$sendHttpRequest(requestOptions);
+            });
+        } else {
+            var requestOptions = this._getRequestOptions(name, options, namespace);
+            return this.$sendHttpRequest(requestOptions);
+        }
+    }
+
+    /**
+     * 加载后端 HTTP 接口的配置
+     * 
+     * @param {object} requestOptions 请求参数
+     * @return {Promise}
+     */
+    loadApiConfig(requestOptions) {
+        this.loading = true;
+        return this.$sendHttpRequest(requestOptions).then(([data, requestResult]) => {
+            this.addApiConfig(data);
+
+            // 激活等待发送的请求
+            this.stalled.forEach(function(dfd) {
+                dfd.resolve();
+            });
+            this.stalled.length = 0;
+
+            this.loading = false;
+
+            return [data, requestResult];
+        }, () => {
+            this.loading = false;
+        });
     }
 
     /**
@@ -197,6 +244,42 @@ class BackendApi {
      */
     normalizeRequestResult(requestOptions, requestResult) {
         return requestResult;
+    }
+}
+
+/**
+ * 延迟执行
+ * 
+ * @see jQuery.Deferred
+ */
+class Deferred {
+    constructor() {
+        this._state = 'pending';
+
+        this._resolve = null;
+        this._reject = null;
+
+        this._promise = new Promise((resolve, reject) => {
+            this._resolve = resolve;
+            this._reject = reject;
+        });
+    }
+    state() {
+        return this._state;
+    }
+    promise() {
+        return this._promise;
+    }
+    then(onFulfilled, onRejected) {
+        return this._promise.then(onFulfilled, onRejected);
+    }
+    resolve(value) {
+        this._resolve(value);
+        this._state = 'fulfilled';
+    }
+    reject(reason) {
+        this._reject(reason);
+        this._state = 'rejected';
     }
 }
 

@@ -200,3 +200,25 @@ backendApi.sendRequest('getRemoteApiConfig', {
         * 输出错误日志
         * 针对错误状态做自定义处理 - `failStatusHandler`
         * 抛出错误提示给用户 - `commonFailTip` <- `getFailTipMessage`
+
+## 微信小程序 HTTP 请求没有实现 Cookie 机制
+
+不过从 [`2.10.0`](https://developers.weixin.qq.com/miniprogram/dev/api/network/request/wx.request.html#Object-res) 版本起, `wx.request` 的 `success` 回调方法中增加了 `cookies` 字段
+
+* 建议使用 [weapp-cookie](https://github.com/charleslo1/weapp-cookie) 一行代码让小程序支持 cookie
+  
+  在底层改写了 `wx.request` 自动读取和写入 HTTP 请求中的 Cookie(遵循浏览器的机制), 应用层可以无感知使用
+* 如果确实想自己实现, 建议通过 [set-cookie-parser](https://github.com/nfriedly/set-cookie-parser) 来解析 `set-cookie` 头
+
+  ```javascript
+  import setCookie from 'set-cookie-parser';
+
+  // 解析单个 set-cookie 头的值
+  // [{name: "a2", value: "a2", path: "/", expires: Date}]
+  var cookies = setCookie.parse('a2=a2; Path=/; Expires=Thu, 27 Feb 2020 07:12:23 GMT');
+
+  // 解析合并了之后的 cookie 内容(先分离成单个值)
+  // ["a1=a1; Path=/", "a2=a2; Path=/; Expires=Thu, 27 Feb 2020 07:12:23 GMT", "a3=a3; Path=/"]
+  var splitCookieHeaders = setCookie.splitCookiesString('a1=a1; Path=/,a2=a2; Path=/; Expires=Thu, 27 Feb 2020 07:12:23 GMT,a3=a3; Path=/');
+  var cookies = setCookie.parse(splitCookieHeaders);
+  ```
